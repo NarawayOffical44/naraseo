@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Naraseo AI — Win Every Search</title>
+  <meta name="description" content="One platform for SEO intelligence. Chrome extension, REST API, MCP server. For teams, agencies, and AI agents." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f52d6;
+      --primary-dim: rgba(99,102,241,0.15);
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #263248;
+      --border: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --radius: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover { color: var(--text); background: var(--surface); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    .btn-outline:hover { background: var(--primary-dim); }
+
+    .btn-lg {
+      padding: 12px 28px;
+      font-size: 15px;
+      border-radius: 10px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: calc(100vh - 60px);
+      display: flex;
+      align-items: center;
+      padding: 80px 32px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -180px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.17) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--primary-dim);
+      color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 4.2vw, 50px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, #c7d2fe 0%, #818cf8 40%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      max-width: 480px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ── TERMINAL ── */
+    .terminal {
+      background: #080f1e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    .terminal-bar {
+      background: var(--surface);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .t-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .terminal-label {
+      margin-left: 8px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    .terminal-body {
+      padding: 22px 24px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 12.5px;
+      line-height: 1.85;
+    }
+
+    .t-comment { color: #475569; }
+    .t-prompt { color: var(--primary); user-select: none; }
+    .t-cmd { color: #94a3b8; }
+    .t-flag { color: #a5b4fc; }
+    .t-str { color: #86efac; }
+    .t-key { color: #93c5fd; }
+    .t-num { color: #fdba74; }
+    .t-brace { color: #64748b; }
+
+    /* ── DEMO BAR ── */
+    .demo-bar {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 32px;
+    }
+
+    .demo-bar-inner {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .demo-bar-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .demo-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .demo-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 16px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+      min-width: 0;
+    }
+    .demo-input::placeholder { color: var(--text-dim); }
+    .demo-input:focus { border-color: var(--primary); }
+
+    .demo-feedback {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .score-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 22px;
+    }
+
+    .score-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .score-details strong { font-size: 16px; display: block; }
+    .score-details .score-meta { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+
+    .score-cta { margin-left: 8px; font-size: 12px; color: var(--primary); font-weight: 600; }
+    .score-cta:hover { text-decoration: underline; }
+
+    .demo-msg {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 13px;
+    }
+    .demo-msg.error { color: var(--red); }
+    .demo-msg.loading {
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SECTIONS ── */
+    section { padding: 84px 32px; }
+
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 2.8vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .section-sub {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 520px;
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--primary-dim);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+
+    .feature-list {
+      list-style: none;
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .feature-list li::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--primary);
+      flex-shrink: 0;
+    }
+
+    /* ── MCP ── */
+    .section-dark { background: var(--surface); }
+
+    .mcp-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .mcp-tool {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: border-color 0.15s;
+    }
+    .mcp-tool:hover { border-color: var(--primary); }
+
+    .mcp-name {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      color: #a5b4fc;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .mcp-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    .mcp-config {
+      background: #080f1e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 26px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.9;
+      overflow-x: auto;
+    }
+
+    /* ── PRICING ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .price-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      position: relative;
+    }
+    .price-card.featured {
+      border-color: var(--primary);
+      background: linear-gradient(160deg, #1e293b 0%, #1b2444 100%);
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .plan-name {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .plan-price {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .plan-price .period { font-size: 17px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; }
+
+    .plan-tagline { color: var(--text-muted); font-size: 13px; margin-bottom: 22px; }
+
+    .plan-divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    .plan-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .check { flex-shrink: 0; margin-top: 1px; color: var(--green); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 28px 32px;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 22px;
+      list-style: none;
+    }
+    .footer-links a {
+      color: var(--text-dim);
+      font-size: 13px;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--text-muted); }
+
+    .footer-copy { color: var(--text-dim); font-size: 13px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 960px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 44px; }
+      .terminal { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .mcp-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .hero { padding: 48px 16px 36px; }
+      section { padding: 56px 16px; }
+      .demo-bar { padding: 24px 16px; }
+      .demo-row { flex-direction: column; }
+      .mcp-grid { grid-template-columns: 1fr; }
+      footer { padding: 22px 16px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-mark">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path d="M1.5 3h12v1.8h-12V3zm0 3.6h8v1.8h-8V6.6zm0 3.6h10v1.8h-10v-1.8z" fill="white"/>
+      </svg>
+    </div>
+    Naraseo AI
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#mcp">API / MCP</a></li>
+    <li><a href="#" target="_blank">Docs</a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <a href="login.html" class="btn btn-ghost">Log In</a>
+    <a href="login.html" class="btn btn-primary">Get Started</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">
+        <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg>
+        Live — MCP server + REST API
+      </div>
+      <h1>Win Every Search —<br /><span class="gradient">SEO to AI Discovery</span></h1>
+      <p class="hero-sub">
+        One platform. Chrome extension, REST API, MCP server.
+        For teams, agencies, and AI agents that need real SEO intelligence — no third-party tools.
+      </p>
+      <div class="hero-ctas">
+        <a href="#extension" class="btn btn-primary btn-lg">Install Extension</a>
+        <a href="login.html" class="btn btn-outline btn-lg">Get API Access</a>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="t-dot" style="background:#ef4444"></div>
+        <div class="t-dot" style="background:#eab308"></div>
+        <div class="t-dot" style="background:#22c55e"></div>
+        <span class="terminal-label">bash — naraseo audit</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-comment"># Audit any URL via REST API</div>
+        <div style="margin-top:8px">
+          <span class="t-prompt">$</span><span class="t-cmd"> curl -s -X POST \</span>
+        </div>
+        <div style="padding-left:18px">
+          <span class="t-flag">-H </span><span class="t-str">"Content-Type: application/json"</span> <span class="t-cmd">\</span>
+        </div>
+        <div style="padding-left:18px">
+          <span class="t-flag">-H </span><span class="t-str">"Authorization: Bearer $API_KEY"</span> <span class="t-cmd">\</span>
+        </div>
+        <div style="padding-left:18px">
+          <span class="t-flag">-d </span><span class="t-str">'{"url":"https://example.com"}'</span> <span class="t-cmd">\</span>
+        </div>
+        <div style="padding-left:18px">
+          <span class="t-cmd">https://api.naraseo.ai/api/v1/audit</span>
+        </div>
+        <div style="margin-top:14px" class="t-comment"># Response</div>
+        <div style="margin-top:4px">
+          <span class="t-brace">{</span><br/>
+          <span style="padding-left:16px"><span class="t-key">"score"</span><span class="t-brace">: </span><span class="t-num">87</span><span class="t-brace">, </span></span><br/>
+          <span style="padding-left:16px"><span class="t-key">"grade"</span><span class="t-brace">: </span><span class="t-str">"B+"</span><span class="t-brace">, </span></span><br/>
+          <span style="padding-left:16px"><span class="t-key">"issues"</span><span class="t-brace">: [</span><span class="t-str">"Missing H1"</span><span class="t-brace">, </span><span class="t-str">"Slow LCP"</span><span class="t-brace">],</span></span><br/>
+          <span style="padding-left:16px"><span class="t-key">"keywords"</span><span class="t-brace">: [...],</span></span><br/>
+          <span style="padding-left:16px"><span class="t-key">"fixes"</span><span class="t-brace">: [...]</span></span><br/>
+          <span class="t-brace">}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE DEMO BAR -->
+<div class="demo-bar">
+  <div class="demo-bar-inner">
+    <div class="demo-bar-label">Free Live Audit — No Account Required</div>
+    <div class="demo-row">
+      <input
+        id="demoUrl"
+        type="url"
+        class="demo-input"
+        placeholder="https://yourwebsite.com"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="btn btn-primary" id="demoBtn" onclick="runDemo()">Audit Free</button>
+    </div>
+    <div id="demoFeedback"></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label">Platform</div>
+    <h2 class="section-title">Three ways to access SEO intelligence</h2>
+    <p class="section-sub">Use whichever interface fits your workflow. All three are powered by the same underlying engine.</p>
+
+    <div class="features-grid">
+      <!-- Extension -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="2" y="4" width="18" height="13" rx="2" stroke="#6366f1" stroke-width="1.7"/>
+            <path d="M7 17v2M15 17v2M5 20h12" stroke="#6366f1" stroke-width="1.7" stroke-linecap="round"/>
+            <circle cx="11" cy="10.5" r="2.5" stroke="#6366f1" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h3>Chrome Extension</h3>
+        <p>Audit any page in one click. Get your SEO score, actionable fixes, and a PDF report — all inline on any website without leaving your browser.</p>
+        <ul class="feature-list">
+          <li>On-page score and letter grade</li>
+          <li>Core Web Vitals overlay</li>
+          <li>One-click schema validation</li>
+          <li>PDF export to local downloads</li>
+        </ul>
+      </div>
+
+      <!-- API -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="2" y="2" width="18" height="18" rx="3" stroke="#6366f1" stroke-width="1.7"/>
+            <path d="M6 8h10M6 12h7M6 16h5" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>REST API</h3>
+        <p>Full SEO intelligence via clean JSON API. Integrate into your product, CI pipeline, or reporting workflow with a single HTTP call.</p>
+        <ul class="feature-list">
+          <li>Keyword research and difficulty scores</li>
+          <li>Competitor gap analysis</li>
+          <li>Geo-grid local rank tracking</li>
+          <li>Site-wide crawl and bulk audit</li>
+        </ul>
+      </div>
+
+      <!-- MCP -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="5" cy="11" r="2.5" stroke="#6366f1" stroke-width="1.5"/>
+            <circle cx="17" cy="5" r="2.5" stroke="#6366f1" stroke-width="1.5"/>
+            <circle cx="17" cy="17" r="2.5" stroke="#6366f1" stroke-width="1.5"/>
+            <path d="M7.5 10L14.5 6.5M7.5 12L14.5 15.5" stroke="#6366f1" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h3>MCP Server</h3>
+        <p>Claude, Cursor, and Windsurf can call our SEO tools natively. Give your AI agent full SEO superpowers with a single JSON config block.</p>
+        <ul class="feature-list">
+          <li>10 native MCP tool definitions</li>
+          <li>Streamable HTTP and SSE transports</li>
+          <li>Claude Desktop compatible</li>
+          <li>Autonomous site-wide fix engine</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOR AI BUILDERS / MCP -->
+<section id="mcp" class="section-dark">
+  <div class="section-inner">
+    <div class="section-label">For AI Builders</div>
+    <h2 class="section-title">10 MCP tools, ready for your agent</h2>
+    <p class="section-sub">Give Claude, Cursor, or any MCP-compatible agent full SEO capabilities. One config line — no API wrappers to write.</p>
+
+    <div class="mcp-grid">
+      <div class="mcp-tool"><div class="mcp-name">seo_audit</div><div class="mcp-desc">Full on-page audit with score, grade, and prioritized issue list</div></div>
+      <div class="mcp-tool"><div class="mcp-name">solve</div><div class="mcp-desc">Autonomous: audit + keywords + schema + AI fixes in a single call</div></div>
+      <div class="mcp-tool"><div class="mcp-name">solve_site</div><div class="mcp-desc">Site-wide autonomous SEO via sitemap discovery</div></div>
+      <div class="mcp-tool"><div class="mcp-name">keyword_research</div><div class="mcp-desc">Keyword suggestions, search volume, and difficulty scores</div></div>
+      <div class="mcp-tool"><div class="mcp-name">schema_validate</div><div class="mcp-desc">Validate existing and generate new JSON-LD structured data</div></div>
+      <div class="mcp-tool"><div class="mcp-name">site_crawl</div><div class="mcp-desc">Crawl entire site, detect broken links and missing meta tags</div></div>
+      <div class="mcp-tool"><div class="mcp-name">geo_grid</div><div class="mcp-desc">Local rank tracking across a configurable geographic grid</div></div>
+      <div class="mcp-tool"><div class="mcp-name">local_seo_audit</div><div class="mcp-desc">NAP consistency, Google Business signals, local ranking factors</div></div>
+      <div class="mcp-tool"><div class="mcp-name">competitor_analysis</div><div class="mcp-desc">Keyword gap analysis with real domain authority via OpenPageRank</div></div>
+      <div class="mcp-tool"><div class="mcp-name">seo_chat</div><div class="mcp-desc">Conversational SEO assistant with full page and site context</div></div>
+    </div>
+
+    <div class="mcp-config">
+      <span class="t-comment">// claude_desktop_config.json — add this block</span><br/>
+      <span class="t-brace">{</span><br/>
+      <span style="padding-left:20px"><span class="t-key">"mcpServers"</span><span class="t-brace">: {</span></span><br/>
+      <span style="padding-left:40px"><span class="t-key">"naraseo-ai"</span><span class="t-brace">: {</span></span><br/>
+      <span style="padding-left:60px"><span class="t-key">"command"</span><span class="t-brace">: </span><span class="t-str">"npx"</span><span class="t-brace">,</span></span><br/>
+      <span style="padding-left:60px"><span class="t-key">"args"</span><span class="t-brace">: [</span><span class="t-str">"mcp-remote"</span><span class="t-brace">, </span><span class="t-str">"https://api.naraseo.ai/mcp/sse"</span><span class="t-brace">]</span></span><br/>
+      <span style="padding-left:40px"><span class="t-brace">}</span></span><br/>
+      <span style="padding-left:20px"><span class="t-brace">}</span></span><br/>
+      <span class="t-brace">}</span>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-inner">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple, predictable pricing</h2>
+    <p class="section-sub">Start free with no credit card required. Scale when you need to. No hidden fees, no per-seat charges.</p>
+
+    <div class="pricing-grid">
+      <!-- FREE -->
+      <div class="price-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0</div>
+        <div class="plan-tagline">Forever free. No credit card required.</div>
+        <hr class="plan-divider"/>
+        <ul class="plan-features">
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>100 requests per day</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>SEO audit and scoring</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Keyword research</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Schema validation</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Competitor analysis</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>SEO chat assistant</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>10 requests per minute</li>
+        </ul>
+        <a href="login.html" class="btn btn-outline" style="width:100%;justify-content:center;padding:12px 0;">Get Started Free</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="price-card featured">
+        <div class="popular-badge">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$49<span class="period">/mo</span></div>
+        <div class="plan-tagline">For growing teams and serious SEO.</div>
+        <hr class="plan-divider"/>
+        <ul class="plan-features">
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>1,000 requests per day</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Free</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Full site crawl</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Geo-grid rank tracking</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Autonomous fix engine</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>PDF report generation</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>60 requests per minute</li>
+        </ul>
+        <a href="login.html" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px 0;">Get Started</a>
+      </div>
+
+      <!-- AGENCY -->
+      <div class="price-card">
+        <div class="plan-name">Agency</div>
+        <div class="plan-price">$199<span class="period">/mo</span></div>
+        <div class="plan-tagline">For agencies and high-volume platforms.</div>
+        <hr class="plan-divider"/>
+        <ul class="plan-features">
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited requests</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Pro</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>White-label headers (X-Brand)</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>WordPress auto-apply</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Priority support</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Custom integrations</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>200 requests per minute</li>
+        </ul>
+        <a href="login.html" class="btn btn-outline" style="width:100%;justify-content:center;padding:12px 0;">Get Started</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXTENSION CTA -->
+<section id="extension" class="section-dark">
+  <div class="section-inner" style="max-width:620px; margin:0 auto; text-align:center;">
+    <div class="section-label" style="justify-content:center; display:flex;">Chrome Extension</div>
+    <h2 class="section-title">SEO scores on every page you visit</h2>
+    <p style="color:var(--text-muted); font-size:16px; margin-bottom:32px; line-height:1.7;">
+      Install Naraseo AI and get instant audits, Core Web Vitals, schema validation, and one-click PDF reports — without leaving your browser tab.
+    </p>
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <a href="#" class="btn btn-primary btn-lg">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7.5" stroke="white" stroke-width="1.5"/>
+          <path d="M9 5.5v3.5l2 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Install for Chrome
+      </a>
+      <a href="login.html" class="btn btn-outline btn-lg">Get API Access</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-mark">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M1.5 3h12v1.8h-12V3zm0 3.6h8v1.8h-8V6.6zm0 3.6h10v1.8h-10v-1.8z" fill="white"/>
+        </svg>
+      </div>
+      Naraseo AI
+    </a>
+    <ul class="footer-links">
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#" target="_blank">GitHub</a></li>
+      <li><a href="#">API Docs</a></li>
+    </ul>
+    <div class="footer-copy">&#169; 2026 Naraseo AI. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  const API_BASE = 'http://localhost:3001';
+
+  function scoreColor(score) {
+    if (score >= 80) return { bg: 'rgba(34,197,94,0.12)', color: '#22c55e', ring: '#22c55e' };
+    if (score >= 60) return { bg: 'rgba(234,179,8,0.12)', color: '#eab308', ring: '#eab308' };
+    return { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', ring: '#ef4444' };
+  }
+
+  function setFeedback(html) {
+    document.getElementById('demoFeedback').innerHTML = html;
+  }
+
+  async function runDemo() {
+    const input = document.getElementById('demoUrl');
+    const btn = document.getElementById('demoBtn');
+    let url = input.value.trim();
+
+    setFeedback('');
+
+    if (!url) {
+      setFeedback('<div class="demo-msg error">Please enter a URL to audit.</div>');
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    try { new URL(url); } catch (e) {
+      setFeedback('<div class="demo-msg error">Please enter a valid URL (e.g. https://example.com).</div>');
+      return;
+    }
+
+    btn.disabled = true;
+    setFeedback('<div class="demo-msg loading"><div class="spinner"></div>Analyzing page&hellip;</div>');
+
+    try {
+      const res = await fetch(API_BASE + '/api/v1/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setFeedback('<div class="demo-msg error">' + (data.error || 'Audit failed (' + res.status + '). Verify the URL and try again.') + '</div>');
+        return;
+      }
+
+      const score = data.score ?? data.data?.score ?? 0;
+      const grade = data.grade ?? data.data?.grade ?? 'N/A';
+      const issues = data.issues ?? data.data?.issues ?? [];
+      const hostname = new URL(url).hostname;
+      const { bg, color, ring } = scoreColor(score);
+
+      const issueText = issues.length > 0
+        ? issues.length + ' issue' + (issues.length !== 1 ? 's' : '') + ' found'
+        : 'No critical issues';
+
+      setFeedback(`
+        <div class="demo-feedback">
+          <div class="score-card">
+            <div class="score-circle" style="background:${bg};color:${color};border:2px solid ${ring};">${score}</div>
+            <div class="score-details">
+              <strong>Grade ${grade}</strong>
+              <div class="score-meta">${hostname} &mdash; ${issueText}</div>
+            </div>
+            <a href="login.html" class="score-cta">Full report &rarr;</a>
+          </div>
+        </div>
+      `);
+    } catch (err) {
+      setFeedback('<div class="demo-msg error">Could not connect to the API. Make sure the server is running on port 3001.</div>');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('demoUrl').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runDemo();
+  });
+</script>
+</body>
+</html>
