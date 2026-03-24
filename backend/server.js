@@ -681,55 +681,136 @@ app.get('/api/pagespeed', async (req, res) => {
  */
 app.post('/api/usage/check', authMiddleware, async (req, res) => {
   try {
-    let profile;
+    const currentMonth = new Date().toISOString().slice(0, 7); // "2026-03"
 
     if (DEMO_MODE) {
       const user = demoUsers.get(req.userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
-      profile = user;
-    } else {
-      const { data } = await supabase.from('profiles').select('*').eq('id', req.userId).single();
-      if (!data) return res.status(404).json({ error: 'User not found' });
-      profile = data;
+
+      // Reset count if it's a new month
+      if (user.resetMonth !== currentMonth) {
+        user.auditsThisMonth = 0;
+        user.resetMonth = currentMonth;
+      }
+
+      const plan = user.plan || 'free';
+      const isAdmin = ADMIN_EMAILS.has(user.email);
+      const limits = { free: 5, pro: Infinity, agency: Infinity };
+      const auditLimit = isAdmin ? Infinity : (limits[plan] || 5);
+      const auditsUsed = user.auditsThisMonth || 0;
+      const auditsLeft = auditLimit === Infinity ? Infinity : Math.max(0, auditLimit - auditsUsed);
+      const canAudit = isAdmin || auditsLeft > 0;
+
+      return res.json({
+        canAudit,
+        auditsLeft:  auditLimit === Infinity ? 9999 : auditsLeft,
+        auditsUsed,
+        auditLimit:  auditLimit === Infinity ? 9999 : auditLimit,
+        plan,
+        message: canAudit
+          ? (auditLimit === Infinity ? 'Unlimited audits' : `${auditsLeft} audits remaining this month`)
+          : `Audit limit reached (${auditLimit}/month on ${plan} plan)`,
+      });
+    }
+
+    // ── Production: Supabase ──────────────────────────────────────────────
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', req.userId)
+      .single();
+    if (!profile) return res.status(404).json({ error: 'User not found' });
+
+    // Auto-reset monthly count if it's a new month
+    let auditsUsed = profile.audits_this_month || 0;
+    if (profile.reset_month !== currentMonth) {
+      auditsUsed = 0;
+      await supabase
+        .from('profiles')
+        .update({ audits_this_month: 0, reset_month: currentMonth })
+        .eq('id', req.userId);
     }
 
     const plan = profile.plan || 'free';
     const isAdmin = ADMIN_EMAILS.has(profile.email);
     const limits = { free: 5, pro: Infinity, agency: Infinity };
-    const auditLimit = isAdmin ? Infinity : (limits[plan] || limits.free);
-    const auditsUsed = profile.audits_this_month || 0;
+    const auditLimit = isAdmin ? Infinity : (limits[plan] || 5);
     const auditsLeft = auditLimit === Infinity ? Infinity : Math.max(0, auditLimit - auditsUsed);
-
     const canAudit = isAdmin || auditsLeft > 0;
-    const message = canAudit
-      ? (auditLimit === Infinity ? 'Unlimited audits' : `${auditsLeft} audits remaining this month`)
-      : `Audit limit reached (${auditLimit}/month)`;
 
-    res.json({ canAudit, auditsLeft: auditLimit === Infinity ? 9999 : auditsLeft, auditsUsed, auditLimit: auditLimit === Infinity ? 9999 : auditLimit, plan, message });
+    res.json({
+      canAudit,
+      auditsLeft:  auditLimit === Infinity ? 9999 : auditsLeft,
+      auditsUsed,
+      auditLimit:  auditLimit === Infinity ? 9999 : auditLimit,
+      plan,
+      message: canAudit
+        ? (auditLimit === Infinity ? 'Unlimited audits' : `${auditsLeft} audits remaining this month`)
+        : `Audit limit reached (${auditLimit}/month on ${plan} plan)`,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 /**
- * POST /api/usage/increment — Increment audit count after successful audit
- * Called by extension after audit completes
+ * POST /api/usage/increment — Increment audit count after successful audit.
+ * Also enforces the limit server-side (double-check) to prevent race conditions.
  */
 app.post('/api/usage/increment', authMiddleware, async (req, res) => {
   try {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
     if (DEMO_MODE) {
       const user = demoUsers.get(req.userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
-      user.auditsThisMonth = (user.auditsThisMonth || 0) + 1;
-      res.json({ auditsThisMonth: user.auditsThisMonth });
-    } else {
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', req.userId).single();
-      if (!profile) return res.status(404).json({ error: 'User not found' });
 
-      const newCount = (profile.audits_this_month || 0) + 1;
-      await supabase.from('profiles').update({ audits_this_month: newCount }).eq('id', req.userId);
-      res.json({ auditsThisMonth: newCount });
+      // Reset if new month
+      if (user.resetMonth !== currentMonth) {
+        user.auditsThisMonth = 0;
+        user.resetMonth = currentMonth;
+      }
+
+      // Enforce limit before incrementing
+      const plan = user.plan || 'free';
+      const limits = { free: 5, pro: Infinity, agency: Infinity };
+      const auditLimit = limits[plan] || 5;
+      if (auditLimit !== Infinity && user.auditsThisMonth >= auditLimit) {
+        return res.status(429).json({ error: 'Monthly audit limit reached', plan, auditLimit });
+      }
+
+      user.auditsThisMonth = (user.auditsThisMonth || 0) + 1;
+      return res.json({ auditsThisMonth: user.auditsThisMonth, plan });
     }
+
+    // ── Production: Supabase ──────────────────────────────────────────────
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', req.userId)
+      .single();
+    if (!profile) return res.status(404).json({ error: 'User not found' });
+
+    // Reset if new month
+    let currentCount = profile.audits_this_month || 0;
+    const updates = {};
+    if (profile.reset_month !== currentMonth) {
+      currentCount = 0;
+      updates.reset_month = currentMonth;
+    }
+
+    // Enforce limit server-side
+    const plan = profile.plan || 'free';
+    const limits = { free: 5, pro: Infinity, agency: Infinity };
+    const auditLimit = limits[plan] || 5;
+    if (auditLimit !== Infinity && currentCount >= auditLimit) {
+      return res.status(429).json({ error: 'Monthly audit limit reached', plan, auditLimit });
+    }
+
+    updates.audits_this_month = currentCount + 1;
+    await supabase.from('profiles').update(updates).eq('id', req.userId);
+
+    res.json({ auditsThisMonth: updates.audits_this_month, plan });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

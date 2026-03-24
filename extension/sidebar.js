@@ -154,10 +154,10 @@ async function checkAndShowUsage() {
   return remaining > 0;
 }
 
+// Returns true if increment succeeded, false if limit hit server-side
 async function incrementAuditCount() {
   const { authToken } = await chrome.storage.local.get('authToken');
 
-  // If user is logged in, increment on backend (real enforcement)
   if (authToken) {
     try {
       const response = await fetch('http://localhost:3001/api/usage/increment', {
@@ -168,22 +168,38 @@ async function incrementAuditCount() {
         }
       });
 
+      if (response.status === 429) {
+        // Server-side limit enforced — block here even if client thinks it's ok
+        const { error, auditLimit, plan } = await response.json();
+        addChatMessage(
+          `**Audit limit reached** — ${auditLimit} audits/month on ${plan} plan.\n\nUpgrade to Pro for unlimited audits.`,
+          'ai', true
+        );
+        return false;
+      }
+
       if (response.ok) {
         const { auditsThisMonth } = await response.json();
-        console.log(` Audit count incremented on server: ${auditsThisMonth}`);
-        return;
+        // Sync local chip with server count
+        const planLimits = { free: 5, pro: Infinity, agency: Infinity };
+        const { userPlan = 'free' } = await chrome.storage.local.get('userPlan');
+        const limit = planLimits[userPlan] || AUDIT_FREE_LIMIT;
+        const remaining = limit === Infinity ? 9999 : Math.max(0, limit - auditsThisMonth);
+        updateCreditsChip(remaining);
+        return true;
       }
     } catch (err) {
       console.error('Failed to increment on server:', err);
-      // Fall through to local increment
+      // Network error — fall through to local increment
     }
   }
 
-  // Fallback: Local increment (for demo/offline mode)
+  // Fallback: Local increment (offline / unauthenticated)
   const usage = await getUsageThisMonth();
   await chrome.storage.local.set({ [usage.key]: usage.count + 1 });
   const remaining = Math.max(0, AUDIT_FREE_LIMIT - (usage.count + 1));
   updateCreditsChip(remaining);
+  return true;
 }
 
 function updateCreditsChip(remaining) {
