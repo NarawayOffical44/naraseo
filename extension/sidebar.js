@@ -1607,38 +1607,32 @@ async function highlightIssues() {
 }
 
 //  PROGRESS LOADER 
-let _progressTimers = [];
+// Progress steps — driven by real audit milestones, not timers
+const STEP_PCT = { 1: 15, 2: 40, 3: 70, 4: 90 };
+
 function startProgressSteps() {
-  _progressTimers.forEach(clearTimeout);
-  _progressTimers = [];
-  // Reset all steps
+  // Reset all steps to pending
   for (let i = 1; i <= 4; i++) {
     const el = document.getElementById(`step-${i}`);
     if (el) el.className = 'progress-step';
   }
   const fill = document.getElementById('progress-bar-fill');
   if (fill) fill.style.width = '0%';
-
-  const activate = (n, pct) => {
-    const el = document.getElementById(`step-${n}`);
-    if (el) {
-      // mark previous as done
-      for (let i = 1; i < n; i++) {
-        const prev = document.getElementById(`step-${i}`);
-        if (prev) { prev.className = 'progress-step done'; }
-      }
-      el.className = 'progress-step active';
-    }
-    if (fill) fill.style.width = pct + '%';
-  };
-
-  activate(1, 15);
-  _progressTimers.push(setTimeout(() => activate(2, 40), 400));
-  _progressTimers.push(setTimeout(() => activate(3, 70), 900));
-  _progressTimers.push(setTimeout(() => activate(4, 90), 1600));
 }
+
+function activateStep(n) {
+  // Mark all previous steps done, activate step n
+  for (let i = 1; i < n; i++) {
+    const el = document.getElementById(`step-${i}`);
+    if (el) el.className = 'progress-step done';
+  }
+  const el = document.getElementById(`step-${n}`);
+  if (el) el.className = 'progress-step active';
+  const fill = document.getElementById('progress-bar-fill');
+  if (fill) fill.style.width = (STEP_PCT[n] || 90) + '%';
+}
+
 function finishProgressSteps() {
-  _progressTimers.forEach(clearTimeout);
   for (let i = 1; i <= 4; i++) {
     const el = document.getElementById(`step-${i}`);
     if (el) el.className = 'progress-step done';
@@ -1711,6 +1705,7 @@ async function runAudit() {
   document.getElementById('audit-results').style.display   = 'none';
   document.getElementById('audit-loading').style.display   = 'flex';
   startProgressSteps();
+  activateStep(1); // Step 1: Reading page
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -1728,12 +1723,16 @@ async function runAudit() {
   let pageData = null;
   try { pageData = await getPageData(tab.id); } catch {}
 
-  // Step 2: PageSpeed proxy — only network call needed
+  activateStep(2); // Step 2: Fetching Core Web Vitals (this is the slow one)
+
+  // Step 2: PageSpeed proxy — can take 5-10s, step stays active until done
   let pageSpeed = null;
   try {
     const psResp = await fetch(`http://localhost:3001/api/pagespeed?url=${encodeURIComponent(tab.url)}`);
     if (psResp.ok) pageSpeed = await psResp.json();
   } catch {}
+
+  activateStep(3); // Step 3: Scoring (fast, client-side)
 
   try {
     let result;
@@ -1776,6 +1775,7 @@ async function runAudit() {
       result._pageData       = pageData;
     }
 
+    activateStep(4); // Step 4: Generating fixes
     currentAudit = result;
     chrome.storage.local.set({ currentAudit });
     await incrementAuditCount();
@@ -3079,37 +3079,54 @@ async function downloadReport() {
   }
 
   const btnDl = document.getElementById('btn-download');
-  if (btnDl) { btnDl.textContent = 'Opening...'; btnDl.disabled = true; }
+  if (btnDl) { btnDl.textContent = 'Generating...'; btnDl.disabled = true; }
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const pageData = await getPageData(tab.id);
     const { userPlan = 'free' } = await chrome.storage.local.get('userPlan');
 
-    // Build canonical report JSON
     const reportJson = buildReportJson(currentAudit, pageData || {}, currentUrl, currentKeywords);
     currentAudit._reportJson = reportJson;
     chrome.storage.local.set({ currentAudit });
 
-    // Build HTML and inject auto-print script
-    let html = buildReportHtml(reportJson, userPlan);
+    const html = buildReportHtml(reportJson, userPlan);
+    const hostname = reportJson.meta?.hostname || 'report';
+    const dateSlug = new Date().toISOString().split('T')[0];
+    const filename = `naraseo-${hostname}-${dateSlug}.pdf`;
 
-    // Inject print trigger — fires after fonts/images load, then closes tab
-    const printScript = `
-<script>
-window.addEventListener('load', function() {
-  setTimeout(function() { window.print(); }, 800);
-});
-</script>`;
-    html = html.replace('</body>', printScript + '</body>');
+    // Send HTML to backend Puppeteer — returns real PDF binary, auto-downloads
+    const resp = await fetch('http://localhost:3001/api/v1/report/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, filename }),
+    });
 
-    // Open in new tab via data URL — reliable in MV3, no html2canvas needed
-    const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-    await chrome.tabs.create({ url: dataUrl });
+    if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+
+    const blob = await resp.blob();
+    const dataUrl = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(blob);
+    });
+
+    await chrome.downloads.download({ url: dataUrl, filename });
 
   } catch (err) {
     console.error('[Report] Failed:', err);
-    alert('Report failed: ' + err.message);
+    // Fallback: open in new tab if backend unavailable
+    try {
+      const { userPlan = 'free' } = await chrome.storage.local.get('userPlan');
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const pageData = await getPageData(tab.id);
+      const reportJson = buildReportJson(currentAudit, pageData || {}, currentUrl, currentKeywords);
+      let html = buildReportHtml(reportJson, userPlan);
+      html = html.replace('</body>', '<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),600));</script></body>');
+      await chrome.tabs.create({ url: 'data:text/html;charset=utf-8,' + encodeURIComponent(html) });
+    } catch (e2) {
+      alert('Report failed: ' + err.message);
+    }
   } finally {
     if (btnDl) { btnDl.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Report'; btnDl.disabled = false; }
   }
@@ -3701,16 +3718,26 @@ async function downloadHistoryReport(id) {
   const reportJson = entry._reportJson || buildReportJson(entry, {}, entry.url, []);
 
   try {
-    let html = buildReportHtml(reportJson, userPlan);
-    const printScript = `
-<script>
-window.addEventListener('load', function() {
-  setTimeout(function() { window.print(); }, 800);
-});
-</script>`;
-    html = html.replace('</body>', printScript + '</body>');
-    const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-    await chrome.tabs.create({ url: dataUrl });
+    const html = buildReportHtml(reportJson, userPlan);
+    const domain = (entry.url || 'report').replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+    const dateStr = new Date(entry.timestamp).toISOString().slice(0, 10);
+    const filename = `naraseo-${domain}-${dateStr}.pdf`;
+
+    const resp = await fetch('http://localhost:3001/api/v1/report/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, filename }),
+    });
+
+    if (!resp.ok) throw new Error(`Server ${resp.status}`);
+
+    const blob = await resp.blob();
+    const dataUrl = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(blob);
+    });
+    await chrome.downloads.download({ url: dataUrl, filename });
   } catch (e) {
     console.error('downloadHistoryReport error:', e);
     addChatMessage('Could not generate PDF. Please try again.', 'ai', false);

@@ -78,4 +78,46 @@ router.post('/', featureAccess('audit'), async (req, res) => {
   }
 });
 
+/**
+ * POST /api/v1/report/render
+ * Takes pre-built HTML from the extension, renders to PDF via Puppeteer.
+ * Allows extension to build the report client-side and get a real PDF back
+ * without html2canvas (which produces blank output in MV3 sidebar context).
+ *
+ * Input:  { html: string, filename?: string }
+ * Output: application/pdf binary — auto-downloadable
+ */
+router.post('/render', async (req, res) => {
+  const { html, filename } = req.body;
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'html required' });
+  }
+
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+      printBackground: true,
+    });
+
+    const name = filename || `naraseo-report-${Date.now()}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error('[report/render] error:', error);
+    return res.status(500).json({ error: error.message });
+  } finally {
+    if (browser) await browser.close();
+  }
+});
+
 export default router;
