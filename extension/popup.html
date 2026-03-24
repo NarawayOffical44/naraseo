@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO AI - Complete Audit Tool</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="header-left">
+        <h1>🤖 SEO AI</h1>
+        <p id="url-display" class="url-display">example.com</p>
+      </div>
+      <a href="#" id="btn-settings" class="btn-settings" title="Settings">⚙️</a>
+    </div>
+
+    <!-- State 1: Ready -->
+    <div id="state-ready" class="state active">
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <h2>Ready to Audit</h2>
+        <p>Click below to get your SEO score in 2 minutes</p>
+
+        <button id="btn-audit" class="btn-primary btn-full">
+          📊 Audit This Page
+        </button>
+
+        <div class="info-box">
+          <p>Free audits: <strong id="free-audits">3</strong>/month</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 2: Analyzing -->
+    <div id="state-analyzing" class="state">
+      <div class="analyzing-state">
+        <div class="spinner"></div>
+        <p id="status-text">Analyzing your website...</p>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 3: Results (with tabs) -->
+    <div id="state-results" class="state">
+      <div class="tabs">
+        <button class="tab active" data-tab="audit">Audit</button>
+        <button class="tab" data-tab="chat">Chat</button>
+        <button class="tab" data-tab="settings">Settings</button>
+      </div>
+
+      <!-- Tab 1: Audit Results -->
+      <div id="tab-audit" class="tab-content active">
+        <div class="score-section">
+          <svg id="score-gauge" viewBox="0 0 120 120" class="gauge">
+            <circle cx="60" cy="60" r="45" class="gauge-bg"/>
+            <circle cx="60" cy="60" r="45" class="gauge-progress" id="gauge-progress"/>
+            <text x="60" y="68" class="score-text" id="score-value">72</text>
+            <text x="60" y="85" class="grade-text" id="grade-value">B</text>
+          </svg>
+          <div class="score-label">Overall Score</div>
+        </div>
+
+        <div class="issues-summary">
+          <div class="issue-card critical">
+            <div class="issue-number" id="critical-count">3</div>
+            <div class="issue-label">Critical</div>
+          </div>
+          <div class="issue-card warning">
+            <div class="issue-number" id="warning-count">5</div>
+            <div class="issue-label">Warning</div>
+          </div>
+          <div class="issue-card info">
+            <div class="issue-number" id="info-count">2</div>
+            <div class="issue-label">Info</div>
+          </div>
+        </div>
+
+        <div class="top-issues">
+          <h3>Top Issues</h3>
+          <div id="top-issues-list" class="issues-list">
+            <!-- Top issues appear here -->
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="btn-highlight" class="btn-primary">💡 Highlight Issues</button>
+          <button id="btn-report" class="btn-secondary" title="Download professional PDF report">📥 Download PDF</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Chat -->
+      <div id="tab-chat" class="tab-content">
+        <div class="chat-container">
+          <div id="chat-messages" class="chat-messages">
+            <div class="chat-message ai">
+              <p>Hello! I'm your SEO AI assistant. Ask me anything about fixing your site's SEO issues.</p>
+            </div>
+          </div>
+
+          <div class="chat-input">
+            <input type="text" id="chat-input" placeholder="Ask me anything..." />
+            <button id="btn-send" class="btn-send">→</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Settings -->
+      <div id="tab-settings" class="tab-content">
+        <div class="settings-panel">
+          <div class="setting-item">
+            <label>Claude API Key (optional)</label>
+            <input type="password" id="api-key" placeholder="sk-ant-..." />
+            <small>For advanced AI features. Get one at console.anthropic.com</small>
+          </div>
+
+          <div class="setting-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="track-keywords" />
+              Track keyword rankings
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="weekly-reports" />
+              Weekly email reports
+            </label>
+          </div>
+
+          <button id="btn-save-settings" class="btn-primary btn-full">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 4: Highlights Active -->
+    <div id="state-highlights" class="state">
+      <div class="highlight-active">
+        <div class="success-icon">✓</div>
+        <h2>Issues Highlighted</h2>
+        <p>Red, orange, and blue boxes show issues on your page</p>
+
+        <div class="action-buttons">
+          <button id="btn-chat-2" class="btn-primary">💬 Ask AI</button>
+          <button id="btn-clear" class="btn-secondary">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

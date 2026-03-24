@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env
+.env.local
+backend/.env
+backend/.env.example
+backend/node_modules/
+backend/NUL
+backend/backend.log
+*.pem
+*.crx
+naraseo-ai-extension-final.tar.gz
+naraseo-ai-extension-v1.0.0.tar.gz
+seo-ai-extension.zip
+claude.exe
+.claude/

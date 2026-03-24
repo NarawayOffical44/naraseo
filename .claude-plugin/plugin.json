@@ -1,0 +1,12 @@
+{
+  "name": "naraseo-ai",
+  "description": "SEO + Geo analysis engine. Audit any URL, get exact fixes, track local rankings, analyse competitors. Works via MCP or REST API.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Naraseo AI",
+    "email": "hello@naraseo.ai"
+  },
+  "homepage": "https://github.com/your-org/naraseo-ai",
+  "repository": "https://github.com/your-org/naraseo-ai",
+  "keywords": ["seo", "geo", "audit", "rank-tracking", "keyword-research", "competitor-analysis"]
+}

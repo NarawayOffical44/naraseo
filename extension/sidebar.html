@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Naraseo AI</title>
+  <link rel="stylesheet" href="sidebar.css">
+  <!-- PDF Generation Library -->
+  <script src="lib/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- 
+         MAIN PANEL (left, fills most width)
+     -->
+    <div class="main-panel" id="main-panel">
+
+      <!-- History Slide-in -->
+      <div id="history-panel" class="history-panel">
+        <div class="history-panel-header">
+          <div class="history-panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Audit History
+          </div>
+          <button id="btn-close-history" class="btn-close-history">&#10005;</button>
+        </div>
+        <div class="history-free-bar" id="history-free-bar">
+          <span id="history-count-label">0 / 5 audits saved</span>
+          <span class="history-pro-tag">Upgrade for unlimited</span>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="history-empty">No audits yet.<br>Run your first audit!</div>
+        </div>
+        <div class="history-upgrade-banner" id="history-upgrade-banner" style="display:none;">
+          <div class="upgrade-icon"></div>
+          <div class="upgrade-text">
+            <strong>Unlock Full History</strong>
+            <span>Upgrade to Pro for unlimited history.</span>
+          </div>
+          <button class="btn-upgrade">Upgrade to Pro</button>
+        </div>
+      </div>
+      <div id="history-backdrop" class="history-backdrop" style="display:none;"></div>
+
+      <!-- 
+           AUTH OVERLAY MODAL (pops when clicking
+           Audit without being logged in)
+       -->
+      <div id="audit-auth-overlay" class="audit-auth-overlay" style="display:none;">
+        <div class="audit-auth-card">
+          <button class="audit-auth-close" id="audit-auth-close-btn">&#10005;</button>
+          <div class="audit-auth-header">
+            <img src="logo.png" alt="Naraseo AI" style="width:36px;height:36px;object-fit:contain;">
+            <h2>Sign in to run your audit</h2>
+            <p>5 free audits/month — no credit card required</p>
+          </div>
+          <div class="auth-toggle" style="margin-bottom:14px;">
+            <button class="auth-toggle-btn active" id="overlay-btn-login">Sign In</button>
+            <button class="auth-toggle-btn" id="overlay-btn-signup">Create Account</button>
+          </div>
+          <form id="overlay-login-form" class="auth-form">
+            <div class="form-group"><label>Email</label><input type="email" id="overlay-login-email" placeholder="you@example.com" required /></div>
+            <div class="form-group"><label>Password</label><input type="password" id="overlay-login-password" placeholder="Your password" required /></div>
+            <div class="auth-error" id="overlay-login-error"></div>
+            <button type="submit" class="btn-auth-submit" id="overlay-login-submit">Sign In & Start Audit</button>
+          </form>
+          <form id="overlay-signup-form" class="auth-form" style="display:none;">
+            <div class="form-group"><label>Full Name</label><input type="text" id="overlay-signup-name" placeholder="Your name" required /></div>
+            <div class="form-group"><label>Email</label><input type="email" id="overlay-signup-email" placeholder="you@example.com" required /></div>
+            <div class="form-group"><label>Password</label><input type="password" id="overlay-signup-password" placeholder="Min 8 characters" minlength="8" required /></div>
+            <div class="auth-error" id="overlay-signup-error"></div>
+            <button type="submit" class="btn-auth-submit" id="overlay-signup-submit">Create Account & Start Audit</button>
+          </form>
+          <div class="audit-auth-features">
+            <span> 5 free audits/month</span>
+            <span> AI chat consultant</span>
+            <span> PDF reports</span>
+          </div>
+        </div>
+      </div>
+
+      <!--  Page header (tiny, just url)  -->
+      <div class="panel-topbar">
+        <div class="topbar-logo">
+          <img src="logo.png" alt="Naraseo AI" style="width: 26px; height: 26px; object-fit: contain;">
+          <span class="logo-name">Naraseo AI</span>
+        </div>
+        <div class="topbar-url" id="sidebar-url">Loading...</div>
+        <span id="credits-chip" class="credits-chip" onclick="switchView('account')" title="Monthly audit limit">5/5</span>
+        <button class="topbar-report-btn" id="btn-download" style="display:none;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Report
+        </button>
+      </div>
+
+      <!--  Tab content area  -->
+      <div class="panel-content" id="panel-content">
+
+        <!--  HOME / SUMMARY VIEW  -->
+        <div id="view-home" class="panel-view active">
+
+          <!-- Loading -->
+          <div id="audit-loading" class="audit-loading" style="display:none;">
+            <div class="progress-loader">
+              <div class="progress-loader-title">Running SEO Audit</div>
+              <div class="progress-step" id="step-1">
+                <div class="step-dot"></div>
+                <div class="step-text">Connecting to page</div>
+                <div class="step-check"></div>
+              </div>
+              <div class="progress-step" id="step-2">
+                <div class="step-dot"></div>
+                <div class="step-text">Analyzing on-page SEO</div>
+                <div class="step-check"></div>
+              </div>
+              <div class="progress-step" id="step-3">
+                <div class="step-dot"></div>
+                <div class="step-text">Fetching PageSpeed data</div>
+                <div class="step-check"></div>
+              </div>
+              <div class="progress-step" id="step-4">
+                <div class="step-dot"></div>
+                <div class="step-text">Calculating final score</div>
+                <div class="step-check"></div>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PRE-AUDIT: Sider welcome -->
+          <div id="pre-audit-state" class="sider-welcome">
+            <div class="welcome-text">
+              <h1>Hi,</h1>
+              <p>Ready to audit this page?</p>
+            </div>
+
+            <!-- 2×2 quick action pills (like Sider) -->
+            <div class="quick-actions-grid">
+              <button class="qa-pill" id="btn-audit-main">
+                
+                <span>Full Audit</span>
+              </button>
+              <button class="qa-pill" id="qa-chat" onclick="switchView('chat')">
+                
+                <span>AI Chat</span>
+              </button>
+              <button class="qa-pill" id="qa-speed" onclick="switchView('home'); document.getElementById('btn-audit-main').click()">
+                
+                <span>Page Speed</span>
+              </button>
+              <button class="qa-pill" id="qa-fixes" onclick="switchView('fixes')">
+                
+                <span>Quick Fixes</span>
+              </button>
+              <button class="qa-pill qa-pill-wide" id="qa-crawl" onclick="runSiteCrawl()">
+                
+                <span>Crawl Site</span>
+                <span class="qa-pill-badge">NEW</span>
+              </button>
+            </div>
+
+            <!-- Featured CTA (like Sider's "Beginner's Guide") -->
+            <button class="featured-cta" id="btn-audit-featured">
+              
+              <span class="featured-cta-text">Start SEO Audit</span>
+              <span class="featured-cta-arrow">→</span>
+            </button>
+
+            <!-- View Last Audit (shown only if cached) -->
+            <button id="btn-view-last-audit" class="btn-view-last" style="display:none;" onclick="showResults()">
+              View Last Audit Results →
+            </button>
+
+            <!-- What we check -->
+            <div class="what-we-check">
+              <div class="check-item">
+                <span class="check-dot green"></span>
+                <span>On-Page — titles, meta, headings, content</span>
+              </div>
+              <div class="check-item">
+                <span class="check-dot indigo"></span>
+                <span>Technical — speed, vitals, mobile, errors</span>
+              </div>
+              <div class="check-item">
+                <span class="check-dot amber"></span>
+                <span>Off-Page — authority, backlinks, GSC</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- POST-AUDIT RESULTS -->
+          <div id="audit-results" style="display:none; flex-direction:column; gap:12px;">
+
+            <div class="score-container">
+              <div class="gauge-wrapper">
+                <div class="score-gauge">
+                  <svg viewBox="0 0 140 140" class="gauge-svg">
+                    <defs>
+                      <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#2563eb"/>
+                        <stop offset="100%" style="stop-color:#1d4ed8"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="70" cy="70" r="60" class="gauge-bg"/>
+                    <circle cx="70" cy="70" r="60" class="gauge-progress" id="gauge-progress"/>
+                  </svg>
+                  <div class="gauge-content">
+                    <div class="gauge-score" id="summary-score">--</div>
+                    <div class="gauge-label">Score</div>
+                  </div>
+                  <div class="gauge-grade" id="summary-grade">--</div>
+                </div>
+              </div>
+              <div class="score-domain" id="score-domain">Analyzing...</div>
+              <div class="score-usage-bar" id="score-usage-bar">
+                <span class="score-usage-text" id="usage-text">3 of 5 audits used</span>
+                <button class="score-usage-upgrade" onclick="switchView('account')">Upgrade ↗</button>
+              </div>
+            </div>
+
+            <!--  Priority Actions  -->
+            <div id="priority-actions" style="display:none;"></div>
+
+            <div class="pillars-grid">
+              <div class="pillar-card onpage">
+                <div class="pillar-score" id="pillar-onpage">--</div>
+                <div class="pillar-bar-wrap"><div class="pillar-bar" id="bar-onpage"></div></div>
+                <div class="pillar-label">On-Page</div>
+              </div>
+              <div class="pillar-card technical">
+                <div class="pillar-score" id="pillar-technical">--</div>
+                <div class="pillar-bar-wrap"><div class="pillar-bar" id="bar-technical"></div></div>
+                <div class="pillar-label">Technical</div>
+              </div>
+              <div class="pillar-card offpage">
+                <div class="pillar-score" id="pillar-offpage">--</div>
+                <div class="pillar-bar-wrap"><div class="pillar-bar" id="bar-offpage"></div></div>
+                <div class="pillar-label">Off-Page</div>
+              </div>
+            </div>
+
+            <div class="issues-grid">
+              <div class="issue-stat critical"><span class="issue-number" id="summary-critical">0</span><span class="issue-label">Critical</span></div>
+              <div class="issue-stat warning"><span class="issue-number" id="summary-warning">0</span><span class="issue-label">Warning</span></div>
+              <div class="issue-stat info"><span class="issue-number" id="summary-info">0</span><span class="issue-label">Info</span></div>
+            </div>
+
+            <div class="action-buttons">
+              <button id="btn-audit" class="btn-action primary">Re-run Audit</button>
+              <button id="btn-highlight" class="btn-action secondary">Highlight Issues</button>
+            </div>
+            <div class="action-buttons" style="margin-top:-4px;">
+              <button id="btn-apply-fixes" class="btn-action agent" title="Inject missing meta tags, OG tags & schema directly into the live page">
+                <span> Apply Quick Fixes</span>
+              </button>
+              <button id="btn-crawl-site" class="btn-action secondary" onclick="runSiteCrawl()" title="Crawl multiple pages — no Puppeteer, fully native">
+                <span> Crawl Site</span>
+              </button>
+            </div>
+
+            <!-- Site Crawl Results -->
+            <div id="crawl-results" style="display:none;"></div>
+
+            <!--  SERP & Social Preview  -->
+            <div class="breakdown-section" id="preview-section" style="display:none;">
+              <div class="breakdown-header onpage-header">
+                <span>SERP &amp; Social Preview</span>
+                <span class="breakdown-score-badge" id="preview-badge">Google</span>
+              </div>
+              <div id="preview-body"></div>
+            </div>
+
+            <!-- Breakdowns -->
+            <div class="breakdown-section">
+              <div class="breakdown-header onpage-header">
+                <span>On-Page SEO</span>
+                <span class="breakdown-score-badge" id="onpage-badge">--</span>
+              </div>
+              <div class="breakdown-items" id="onpage-items"></div>
+            </div>
+
+            <div class="breakdown-section">
+              <div class="breakdown-header technical-header">
+                <span>Technical SEO</span>
+                <span class="breakdown-score-badge" id="technical-badge">--</span>
+              </div>
+              <div class="breakdown-items" id="technical-items"></div>
+            </div>
+
+            <div class="breakdown-section">
+              <div class="breakdown-header offpage-header">
+                <span>Off-Page SEO</span>
+                <span class="breakdown-score-badge offpage-na">Connect GSC</span>
+              </div>
+              <div class="breakdown-items" id="offpage-items">
+                <div class="offpage-connect-box">
+                  <div class="offpage-metrics-preview">
+                    <div class="offpage-metric-row"><span class="offpage-metric-name">Page Authority</span><span class="offpage-metric-val">--</span></div>
+                    <div class="offpage-metric-row"><span class="offpage-metric-name">Backlinks</span><span class="offpage-metric-val">--</span></div>
+                    <div class="offpage-metric-row"><span class="offpage-metric-name">Referring Domains</span><span class="offpage-metric-val">--</span></div>
+                    <div class="offpage-metric-row"><span class="offpage-metric-name">Keyword Rankings</span><span class="offpage-metric-val">--</span></div>
+                  </div>
+                  <p class="offpage-connect-text">Connect Google Search Console to unlock real backlink and ranking data.</p>
+                  <button class="btn-connect-gsc" id="btn-connect-gsc">Connect Google Search Console</button>
+                </div>
+              </div>
+            </div>
+
+            <!--  Content Analysis  -->
+            <div class="breakdown-section" id="content-section" style="display:none;">
+              <div class="breakdown-header content-header">
+                <span>Content Analysis</span>
+                <span class="breakdown-score-badge" id="content-badge">--</span>
+              </div>
+              <div class="content-analysis-body" id="content-analysis-body"></div>
+            </div>
+
+            <!--  Keyword Research  -->
+            <div class="breakdown-section" id="keywords-section" style="display:none;">
+              <div class="breakdown-header keywords-header">
+                <span>Keyword Research</span>
+                <button class="kw-run-btn" id="btn-run-keywords" onclick="runKeywordResearch()">Analyse →</button>
+              </div>
+              <div class="keywords-body" id="keywords-body">
+                <div class="kw-placeholder">
+                  <p>Click <strong>Analyse →</strong> to run AI keyword research on this page's content.</p>
+                  <p style="font-size:11px;color:#9ca3af;margin-top:4px;">Identifies primary keyword, gaps, and quick wins.</p>
+                </div>
+              </div>
+            </div>
+
+            <!--  Heading Structure Tree  -->
+            <div class="breakdown-section" id="headings-section" style="display:none;">
+              <div class="breakdown-header headings-header">
+                <span>Heading Structure</span>
+                <span class="breakdown-score-badge" id="headings-badge">--</span>
+              </div>
+              <div class="heading-tree" id="heading-tree"></div>
+            </div>
+
+            <!--  Image Audit  -->
+            <div class="breakdown-section" id="images-section" style="display:none;">
+              <div class="breakdown-header images-header">
+                <span>Image Audit</span>
+                <span class="breakdown-score-badge" id="images-badge">--</span>
+              </div>
+              <div class="images-audit-body" id="images-audit-body"></div>
+            </div>
+
+            <!--  Links Map  -->
+            <div class="breakdown-section" id="links-section" style="display:none;">
+              <div class="breakdown-header links-header">
+                <span>Links Map</span>
+                <span class="breakdown-score-badge" id="links-badge">--</span>
+              </div>
+              <div class="links-map-body" id="links-map-body"></div>
+            </div>
+
+            <!-- Local / GEO SEO Section -->
+            <div class="breakdown-section" id="local-section" style="display:none;">
+              <div class="breakdown-header local-header">
+                <span>Local &amp; GEO SEO</span>
+                <span class="breakdown-score-badge" id="local-badge">--</span>
+              </div>
+              <div class="breakdown-items" id="local-items">
+                <div class="local-loading" style="padding:12px;color:#94a3b8;font-size:12px;text-align:center;">Analyzing local signals...</div>
+              </div>
+              <button class="geo-grid-trigger-btn" id="btn-open-geo">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+                Check Local Rankings (Geo Grid)
+                <span class="geo-grid-badge">NEW</span>
+              </button>
+            </div>
+
+            <div class="breakdown-section" id="cwv-section" style="display:none;">
+              <div class="breakdown-header technical-header">
+                <span>Core Web Vitals</span>
+                <span class="breakdown-score-badge" id="cwv-badge">Google</span>
+              </div>
+              <div class="vitals-grid">
+                <div class="vital-item"><div class="vital-label">LCP</div><div class="vital-value" id="vital-lcp">--</div><div class="vital-category" id="vital-lcp-cat">--</div></div>
+                <div class="vital-item"><div class="vital-label">INP</div><div class="vital-value" id="vital-fid">--</div><div class="vital-category" id="vital-fid-cat">--</div></div>
+                <div class="vital-item"><div class="vital-label">CLS</div><div class="vital-value" id="vital-cls">--</div><div class="vital-category" id="vital-cls-cat">--</div></div>
+              </div>
+            </div>
+
+            <div class="breakdown-section" id="lighthouse-section" style="display:none;">
+              <div class="breakdown-header technical-header">
+                <span>Lighthouse</span>
+                <span class="breakdown-score-badge">Google</span>
+              </div>
+              <div class="lighthouse-grid">
+                <div class="lh-item"><div class="lh-score" id="lh-performance">--</div><div class="lh-label">Perf</div></div>
+                <div class="lh-item"><div class="lh-score" id="lh-seo">--</div><div class="lh-label">SEO</div></div>
+                <div class="lh-item"><div class="lh-score" id="lh-accessibility">--</div><div class="lh-label">A11y</div></div>
+                <div class="lh-item"><div class="lh-score" id="lh-best-practices">--</div><div class="lh-label">Best</div></div>
+              </div>
+            </div>
+
+          </div><!-- end audit-results -->
+        </div><!-- end view-home -->
+
+        <!--  CHAT VIEW  -->
+        <div id="view-chat" class="panel-view chat-view-panel">
+          <div class="chat-header-bar">
+            <span class="chat-header-title">AI Chat</span>
+            <button class="chat-clear-btn" onclick="clearChatHistory()" title="Clear chat history">Clear</button>
+          </div>
+          <div class="chat-messages" id="sidebar-chat-messages">
+            <div class="chat-message ai">
+              <div class="chat-text">Hi! I'm your Naraseo AI assistant. Run an audit first, then ask me anything about improving your rankings.</div>
+            </div>
+          </div>
+        </div>
+
+        <!--  FIXES VIEW  -->
+        <div id="view-fixes" class="panel-view">
+          <!-- Sub-tabs inside Fixes view -->
+          <div class="fixes-subtabs">
+            <button class="fixes-subtab active" id="subtab-fixes" onclick="showFixesSubtab('fixes')">Code Fixes</button>
+            <button class="fixes-subtab" id="subtab-suggestions" onclick="showFixesSubtab('suggestions')">AI Rewrites</button>
+          </div>
+
+          <div id="fixes-panel">
+            <div class="fixes-list" id="fixes-list">
+              <div class="empty-state">
+                <p>Run an audit to see fixes</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="suggestions-panel" style="display:none;">
+            <div class="suggestions-list" id="suggestions-list">
+              <div class="sugg-empty">Run an audit first, then open AI Rewrites.</div>
+            </div>
+          </div>
+        </div>
+
+        <!--  ACCOUNT VIEW  -->
+        <div id="view-account" class="panel-view">
+          <!-- NOT LOGGED IN -->
+          <div id="auth-gate" class="auth-gate">
+            <div class="auth-logo">
+              <img src="logo.png" alt="Naraseo AI" style="width: 48px; height: 48px; object-fit: contain;">
+              <h2>Naraseo AI</h2>
+              <p>Sign in to save audits, access history, and unlock Pro features.</p>
+            </div>
+            <div class="auth-toggle">
+              <button class="auth-toggle-btn active" id="btn-show-login">Sign In</button>
+              <button class="auth-toggle-btn" id="btn-show-signup">Create Account</button>
+            </div>
+            <form id="login-form" class="auth-form">
+              <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" required /></div>
+              <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Your password" required /></div>
+              <div class="auth-error" id="login-error"></div>
+              <button type="submit" class="btn-auth-submit" id="btn-login-submit">Sign In</button>
+              <button type="button" class="btn-forgot" onclick="handleForgotPassword()">Forgot password?</button>
+            </form>
+            <form id="signup-form" class="auth-form" style="display:none;">
+              <div class="form-group"><label>Full Name</label><input type="text" id="signup-name" placeholder="Your name" required /></div>
+              <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com" required /></div>
+              <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 8 characters" minlength="8" required /></div>
+              <div class="auth-error" id="signup-error"></div>
+              <button type="submit" class="btn-auth-submit" id="btn-signup-submit">Create Account</button>
+              <p class="auth-terms">By signing up you agree to our <a href="#" onclick="openPrivacyPolicy()">Privacy Policy</a>.</p>
+            </form>
+            <div class="auth-plans-preview">
+              <div class="plans-preview-title">What you unlock:</div>
+              <div class="preview-item"> Unlimited audit history</div>
+              <div class="preview-item"> AI chat with full page context</div>
+              <div class="preview-item"> Professional PDF reports</div>
+              <div class="preview-item"> Priority support</div>
+            </div>
+          </div>
+          <!-- LOGGED IN -->
+          <div id="account-view" style="display:none;">
+            <div class="account-profile-card">
+              <div class="account-avatar" id="account-avatar">U</div>
+              <div class="account-info">
+                <div class="account-name" id="account-name">Loading...</div>
+                <div class="account-email" id="account-email">...</div>
+                <div class="account-plan-badge" id="account-plan-badge">FREE</div>
+              </div>
+            </div>
+            <div class="usage-card">
+              <div class="usage-title">This Month's Usage</div>
+              <div class="usage-row"><span class="usage-label">Audits</span><div class="usage-bar-wrap"><div class="usage-bar" id="usage-bar-audits"></div></div><span class="usage-count" id="usage-audits-count">0/5</span></div>
+              <div class="usage-row"><span class="usage-label">History</span><div class="usage-bar-wrap"><div class="usage-bar" id="usage-bar-history"></div></div><span class="usage-count" id="usage-history-count">0/5</span></div>
+            </div>
+            <div class="plans-section">
+              <div class="plans-section-title">Choose Your Plan</div>
+              <div class="plans-value-prop">Agencies charge $3,000–7,000/mo for this work. We do it in 10 seconds.</div>
+              <div class="plans-grid">
+
+                <div class="plan-card" id="plan-free">
+                  <div class="plan-name">Free</div>
+                  <div class="plan-price">$0<span>/mo</span></div>
+                  <div class="plan-tagline">Try it on any page</div>
+                  <div class="plan-features">
+                    <div class="plan-feature">3 full audits/month</div>
+                    <div class="plan-feature">Basic score + top 3 issues</div>
+                    <div class="plan-feature plan-feature-off">Full issue breakdown</div>
+                    <div class="plan-feature plan-feature-off">AI chat + PDF report</div>
+                  </div>
+                  <div class="plan-current-badge" id="free-current-badge" style="display:none;">Current Plan</div>
+                </div>
+
+                <div class="plan-card plan-card-pro" id="plan-pro">
+                  <div class="plan-popular">MOST POPULAR</div>
+                  <div class="plan-name">Pro</div>
+                  <div class="plan-price">$149<span>/mo</span></div>
+                  <div class="plan-tagline">Replace your SEO agency</div>
+                  <div class="plan-features">
+                    <div class="plan-feature">Unlimited audits — 1 site</div>
+                    <div class="plan-feature">500-page full site crawl</div>
+                    <div class="plan-feature">AI consultant chat</div>
+                    <div class="plan-feature">Agency-grade PDF reports</div>
+                    <div class="plan-feature">Local &amp; GEO analysis</div>
+                    <div class="plan-feature">Core Web Vitals tracking</div>
+                  </div>
+                  <button class="btn-upgrade-plan" id="btn-upgrade-pro" onclick="openCheckout('pro')">Get Pro — $149/mo</button>
+                  <div class="plan-savings">Saves $2,850+/mo vs an agency</div>
+                  <div class="plan-current-badge" id="pro-current-badge" style="display:none;">Current Plan</div>
+                </div>
+
+                <div class="plan-card plan-card-agency" id="plan-agency">
+                  <div class="plan-name">Agency</div>
+                  <div class="plan-price">$299<span>/mo</span></div>
+                  <div class="plan-tagline">Bill it back to every client</div>
+                  <div class="plan-features">
+                    <div class="plan-feature">Everything in Pro</div>
+                    <div class="plan-feature">10 client sites</div>
+                    <div class="plan-feature">Unlimited crawl pages</div>
+                    <div class="plan-feature">White-label PDF reports</div>
+                    <div class="plan-feature">Priority support</div>
+                    <div class="plan-feature">API access</div>
+                  </div>
+                  <button class="btn-upgrade-plan btn-upgrade-agency" id="btn-upgrade-agency" onclick="openCheckout('agency')">Get Agency — $299/mo</button>
+                  <div class="plan-savings">1 client retainer pays for 10 months</div>
+                  <div class="plan-current-badge" id="agency-current-badge" style="display:none;">Current Plan</div>
+                </div>
+
+              </div>
+            </div>
+            <!-- Auto-Audit Scheduling -->
+            <div class="settings-section">
+              <div class="settings-title">Scheduled Audits</div>
+              <div class="schedule-card">
+                <div class="schedule-desc">Automatically audit this site and get notified of SEO changes and keyword opportunities.</div>
+                <div class="schedule-row">
+                  <label class="schedule-label">Run every</label>
+                  <select id="schedule-frequency" class="schedule-select" onchange="updateSchedule()">
+                    <option value="off">Off</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                <div id="schedule-status" class="schedule-status" style="display:none;"></div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-title">Settings</div>
+              <button class="settings-row" id="btn-refresh-plan" onclick="refreshPlanStatus()"><span class="settings-label">Refresh Plan</span><span class="settings-arrow">›</span></button>
+              <button class="settings-row" id="btn-privacy-policy" onclick="openPrivacyPolicy()"><span class="settings-label">Privacy Policy</span><span class="settings-arrow">›</span></button>
+              <button class="settings-row settings-row-danger" id="btn-logout" onclick="handleLogout()"><span class="settings-label">Sign Out</span><span class="settings-arrow">›</span></button>
+            </div>
+            <div class="account-version">Naraseo AI v1.0.0</div>
+          </div>
+        </div>
+
+        <!--  SCHEDULERS VIEW  -->
+        <div id="view-schedulers" class="panel-view">
+          <div class="schedulers-header">
+            <span class="schedulers-title">Scheduled Tasks</span>
+            <button class="schedulers-refresh-btn" onclick="loadSchedulersView()" title="Refresh">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+          </div>
+          <div id="schedulers-list" class="schedulers-list">
+            <div class="schedulers-empty">Loading...</div>
+          </div>
+          <div class="settings-section" style="margin-top:14px;">
+            <div class="settings-title">Manage Auto-Audit</div>
+            <div class="schedule-card" style="margin:0 13px 13px;">
+              <div class="schedule-desc">Automatically audit this site and get notified of SEO changes.</div>
+              <div class="schedule-row">
+                <label class="schedule-label">Run every</label>
+                <select id="schedulers-frequency" class="schedule-select" onchange="updateScheduleFromPanel()">
+                  <option value="off">Off</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div id="schedulers-status" class="schedule-status" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end panel-content -->
+
+      <!--  BOTTOM BAR  -->
+      <div class="bottom-bar">
+        <!-- Page context strip — always visible -->
+        <div class="page-ctx-strip" id="page-ctx-strip">
+          <div class="ctx-left">
+            <div class="ctx-dot"></div>
+            <span class="ctx-url" id="ctx-url">Loading...</span>
+          </div>
+          <button class="ctx-action-btn" id="btn-audit-ctx">Audit →</button>
+        </div>
+
+        <!-- Chat input + chips — only when chat view active -->
+        <div class="chat-bottom-bar" id="chat-bottom-bar" style="display:none;">
+          <div class="chat-input-wrap">
+            <input type="text" id="sidebar-chat-input" placeholder="Ask anything about your SEO..." />
+            <button id="btn-send-sidebar" class="btn-send">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div class="bottom-chips">
+            <button class="bottom-chip" onclick="quickChat('Analyse on-page SEO')">On-Page</button>
+            <button class="bottom-chip" onclick="quickChat('Check technical performance')">Technical</button>
+            <button class="bottom-chip" onclick="quickChat('What are the top 3 fixes?')">Top Fixes</button>
+          </div>
+        </div>
+
+        <!-- Footer — always visible -->
+        <div class="bottom-footer">
+          <button class="footer-history-btn" id="btn-history">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            History
+            <span id="history-badge" class="history-badge" style="display:none;">0</span>
+          </button>
+          <div class="footer-spacer"></div>
+          <button class="footer-icon-btn" onclick="switchView('account')" title="Account">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div><!-- end main-panel -->
+
+    <!-- 
+         GEO-GRID RANK TRACKER PANEL
+         (absolute within main-panel)
+     -->
+    <div id="geo-panel" class="geo-panel" style="display:none;">
+      <div class="geo-panel-header">
+        <div class="geo-panel-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+          Local Rank Grid
+        </div>
+        <button id="btn-close-geo" class="btn-close-geo">&#10005;</button>
+      </div>
+
+      <!-- Form -->
+      <form id="geo-form" class="geo-form">
+        <div class="geo-field">
+          <label class="geo-label">Keyword to track</label>
+          <input type="text" id="geo-keyword" class="geo-input" placeholder="e.g. plumber near me" required />
+        </div>
+        <div class="geo-field">
+          <label class="geo-label">Your domain</label>
+          <input type="text" id="geo-domain" class="geo-input" placeholder="e.g. yourbusiness.com" required />
+        </div>
+        <div class="geo-row-fields">
+          <div class="geo-field">
+            <label class="geo-label">Latitude</label>
+            <input type="number" id="geo-lat" class="geo-input" placeholder="40.7128" step="any" required />
+          </div>
+          <div class="geo-field">
+            <label class="geo-label">Longitude</label>
+            <input type="number" id="geo-lng" class="geo-input" placeholder="-74.0060" step="any" required />
+          </div>
+        </div>
+        <div class="geo-row-fields">
+          <div class="geo-field">
+            <label class="geo-label">Grid size</label>
+            <select id="geo-size" class="geo-input">
+              <option value="3">3×3 (9 pts)</option>
+              <option value="5" selected>5×5 (25 pts)</option>
+              <option value="7">7×7 (49 pts)</option>
+            </select>
+          </div>
+          <div class="geo-field">
+            <label class="geo-label">Radius (km)</label>
+            <select id="geo-radius" class="geo-input">
+              <option value="2">2 km</option>
+              <option value="5" selected>5 km</option>
+              <option value="10">10 km</option>
+              <option value="20">20 km</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" id="btn-geo-locate" class="geo-locate-btn">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+          Use My Location
+        </button>
+        <button type="submit" class="geo-submit-btn" id="geo-submit">Run Geo Audit</button>
+      </form>
+
+      <!-- Loading -->
+      <div id="geo-loading" class="geo-loading" style="display:none;">
+        <div class="geo-loading-dots"><span></span><span></span><span></span></div>
+        <div class="geo-loading-text">Checking rankings across the grid…</div>
+        <div class="geo-loading-sub" id="geo-loading-sub">Querying 0 / 25 points</div>
+      </div>
+
+      <!-- Results -->
+      <div id="geo-results" class="geo-results" style="display:none;">
+        <div class="geo-summary-bar" id="geo-summary-bar"></div>
+        <div class="geo-heatmap-wrap" id="geo-heatmap"></div>
+        <div class="geo-legend">
+          <div class="geo-legend-item"><span class="geo-dot geo-dot-top3"></span> #1–3</div>
+          <div class="geo-legend-item"><span class="geo-dot geo-dot-top10"></span> #4–10</div>
+          <div class="geo-legend-item"><span class="geo-dot geo-dot-top20"></span> #11–20</div>
+          <div class="geo-legend-item"><span class="geo-dot geo-dot-none"></span> 20+</div>
+        </div>
+        <div class="geo-demo-notice" id="geo-demo-notice" style="display:none;">
+          Demo data — add SERPER_API_KEY to .env for live rankings
+        </div>
+        <button class="geo-rerun-btn" id="btn-geo-rerun">Run Again</button>
+      </div>
+    </div>
+    <div id="geo-backdrop" class="geo-backdrop" style="display:none;"></div>
+
+    <!-- 
+         RIGHT ICON NAV (Sider-style)
+     -->
+    <div class="right-nav">
+      <div class="right-nav-top">
+        <button class="rnav-btn active" id="rnav-home" title="Summary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <button class="rnav-btn" id="rnav-chat" title="AI Chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="rnav-btn" id="rnav-fixes" title="Fixes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </button>
+        <button class="rnav-btn" id="rnav-account" title="Account">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </button>
+        <button class="rnav-btn" id="rnav-schedulers" title="Schedulers">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
+      </div>
+      <div class="right-nav-bottom">
+        <button class="rnav-btn" id="rnav-history" title="History">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </button>
+        <button class="rnav-btn" id="rnav-report" title="Download Report" style="display:none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end app-shell -->
+
+  <script src="lib/scorer.js"></script>
+  <script src="sidebar.js"></script>
+</body>
+</html>

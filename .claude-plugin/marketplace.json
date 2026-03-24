@@ -1,0 +1,19 @@
+{
+  "name": "naraseo-ai",
+  "owner": {
+    "name": "Naraseo AI"
+  },
+  "metadata": {
+    "description": "SEO + Geo engine for AI tools. Audit URLs, track local rankings, analyse competitors — works as MCP tools in Claude Desktop, Cursor, Windsurf, or as REST/OpenAPI."
+  },
+  "plugins": [
+    {
+      "name": "naraseo-ai",
+      "source": "./",
+      "description": "Full SEO & Geo analysis engine — 10 MCP tools, REST API, OpenAPI Actions",
+      "version": "1.0.0",
+      "author": { "name": "Naraseo AI" },
+      "keywords": ["seo", "geo", "audit", "rank-tracking", "keyword-research"]
+    }
+  ]
+}
