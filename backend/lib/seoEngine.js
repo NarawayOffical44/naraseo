@@ -156,7 +156,7 @@ async function fetchURL(urlString) {
         'User-Agent': USER_AGENT,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Encoding': 'identity',
         'DNT': '1',
         'Connection': 'close',
       },
