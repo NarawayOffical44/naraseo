@@ -2648,7 +2648,7 @@ function buildReportJson(audit, pageData, url, keywords) {
     robots:          { value: pageData.robots || 'index,follow', status: !(pageData.robots || '').includes('noindex') ? 'good' : 'bad' },
     og:              { title: pageData.og?.title || '', description: pageData.og?.description || '', image: pageData.og?.image || '', status: (pageData.og?.title && pageData.og?.description && pageData.og?.image) ? 'good' : pageData.og?.title ? 'warn' : 'bad' },
     schema:          { types: pageData.schemaTypes || [], status: (pageData.schemaTypes || []).length > 0 ? 'good' : 'warn' },
-    images:          { total: (pageData.images || []).length, missingAlt: imgMissing.length, status: imgMissing.length === 0 ? 'good' : imgMissing.length <= 3 ? 'warn' : 'bad' },
+    images:          { total: pageData.imageCount || (pageData.imageDetails || []).length || 0, missingAlt: imgMissing.length, status: imgMissing.length === 0 ? 'good' : imgMissing.length <= 3 ? 'warn' : 'bad' },
     wordCount,
     headings: pageData.headings || [],
   };
