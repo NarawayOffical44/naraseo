@@ -695,22 +695,16 @@
   </div>
 </section>
 
-<!-- LIVE DEMO BAR -->
+<!-- GET API KEY BAR -->
 <div class="demo-bar">
   <div class="demo-bar-inner">
-    <div class="demo-bar-label">Free Live Audit — No Account Required</div>
+    <div class="demo-bar-label">Start auditing your site in 60 seconds</div>
     <div class="demo-row">
-      <input
-        id="demoUrl"
-        type="url"
-        class="demo-input"
-        placeholder="https://yourwebsite.com"
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <button class="btn btn-primary" id="demoBtn" onclick="runDemo()">Audit Free</button>
+      <code class="demo-input" style="display:flex;align-items:center;font-family:monospace;font-size:13px;color:var(--text-muted);">
+        curl -X POST https://naraseo.ai/api/v1/audit -H "Authorization: Bearer YOUR_KEY" -d '{"url":"https://yoursite.com"}'
+      </code>
+      <a href="login.html" class="btn btn-primary">Get API Key</a>
     </div>
-    <div id="demoFeedback"></div>
   </div>
 </div>
 
@@ -925,85 +919,9 @@
 </footer>
 
 <script>
-  const API_BASE = 'http://localhost:3001';
-
-  function scoreColor(score) {
-    if (score >= 80) return { bg: 'rgba(34,197,94,0.12)', color: '#22c55e', ring: '#22c55e' };
-    if (score >= 60) return { bg: 'rgba(234,179,8,0.12)', color: '#eab308', ring: '#eab308' };
-    return { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', ring: '#ef4444' };
-  }
-
-  function setFeedback(html) {
-    document.getElementById('demoFeedback').innerHTML = html;
-  }
-
-  async function runDemo() {
-    const input = document.getElementById('demoUrl');
-    const btn = document.getElementById('demoBtn');
-    let url = input.value.trim();
-
-    setFeedback('');
-
-    if (!url) {
-      setFeedback('<div class="demo-msg error">Please enter a URL to audit.</div>');
-      return;
-    }
-
-    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-
-    try { new URL(url); } catch (e) {
-      setFeedback('<div class="demo-msg error">Please enter a valid URL (e.g. https://example.com).</div>');
-      return;
-    }
-
-    btn.disabled = true;
-    setFeedback('<div class="demo-msg loading"><div class="spinner"></div>Analyzing page&hellip;</div>');
-
-    try {
-      const res = await fetch(API_BASE + '/api/demo/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setFeedback('<div class="demo-msg error">' + (data.error || 'Audit failed (' + res.status + '). Verify the URL and try again.') + '</div>');
-        return;
-      }
-
-      const score = data.score ?? data.data?.score ?? 0;
-      const grade = data.grade ?? data.data?.grade ?? 'N/A';
-      const issues = data.issues ?? data.data?.issues ?? [];
-      const hostname = new URL(url).hostname;
-      const { bg, color, ring } = scoreColor(score);
-
-      const issueText = issues.length > 0
-        ? issues.length + ' issue' + (issues.length !== 1 ? 's' : '') + ' found'
-        : 'No critical issues';
-
-      setFeedback(`
-        <div class="demo-feedback">
-          <div class="score-card">
-            <div class="score-circle" style="background:${bg};color:${color};border:2px solid ${ring};">${score}</div>
-            <div class="score-details">
-              <strong>Grade ${grade}</strong>
-              <div class="score-meta">${hostname} &mdash; ${issueText}</div>
-            </div>
-            <a href="login.html" class="score-cta">Full report &rarr;</a>
-          </div>
-        </div>
-      `);
-    } catch (err) {
-      setFeedback('<div class="demo-msg error">Could not connect to the API. Make sure the server is running on port 3001.</div>');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  document.getElementById('demoUrl').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') runDemo();
+  // Copy curl example to clipboard
+  document.querySelector('.demo-input') && document.querySelector('.demo-input').addEventListener('click', function() {
+    navigator.clipboard && navigator.clipboard.writeText(this.textContent.trim());
   });
 </script>
 </body>
