@@ -928,7 +928,7 @@ function updateWebVitals() {
     const cls = ps.crux.cls;
     setVital('lcp', lcp ? `${lcp}ms` : '--', ps.crux.lcpCategory || '');
     setVital('fid', fid ? `${fid}ms` : '--', ps.crux.fidCategory || ps.crux.inpCategory || '');
-    setVital('cls', cls != null ? String(cls) : '--', ps.crux.clsCategory || '');
+    setVital('cls', cls != null ? (cls / 1000).toFixed(3) : '--', ps.crux.clsCategory || '');
     const badge = document.getElementById('cwv-badge');
     if (badge) badge.textContent = 'Real Users';
   } else {
@@ -1739,14 +1739,23 @@ async function runAudit() {
   let pageData = null;
   try { pageData = await getPageData(tab.id); } catch {}
 
-  activateStep(2); // Step 2: Fetching Core Web Vitals (this is the slow one)
+  activateStep(2); // Step 2: Core Web Vitals + AI Keyword Analysis (parallel)
 
-  // Step 2: PageSpeed proxy — can take 5-10s, step stays active until done
+  // Run PageSpeed, keywords, and off-page data in parallel to save time
   let pageSpeed = null;
-  try {
-    const psResp = await fetch(`https://naraseoai.onrender.com/api/pagespeed?url=${encodeURIComponent(tab.url)}`);
-    if (psResp.ok) pageSpeed = await psResp.json();
-  } catch {}
+  const [psResult, kwResult, opResult] = await Promise.allSettled([
+    fetch(`https://naraseoai.onrender.com/api/pagespeed?url=${encodeURIComponent(tab.url)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+    pageData ? fetch('https://naraseoai.onrender.com/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: tab.url, pageData }),
+    }).then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
+    fetch(`https://naraseoai.onrender.com/api/offpage?url=${encodeURIComponent(tab.url)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  pageSpeed = psResult.status === 'fulfilled' ? psResult.value : null;
+  const kwData = kwResult.status === 'fulfilled' ? kwResult.value : null;
+  const offPageData = opResult.status === 'fulfilled' ? opResult.value : null;
+  if (kwData?.keywords) currentKeywords = kwData.keywords;
 
   activateStep(3); // Step 3: Scoring (fast, client-side)
 
@@ -1791,11 +1800,28 @@ async function runAudit() {
       result._pageData       = pageData;
     }
 
+    // Merge off-page data (domain authority, backlinks)
+    if (offPageData && offPageData.status !== 'unavailable') {
+      result.backlinks = offPageData;
+      result._offPage  = offPageData; // for sidebar off-page pillar score
+    }
+
     activateStep(4); // Step 4: Generating fixes
     currentAudit = result;
     chrome.storage.local.set({ currentAudit });
     await incrementAuditCount();
     await saveAuditToHistory(result, pageData);
+
+    // Auto-render keywords section if we got keyword data in this audit
+    if (currentKeywords) {
+      const kwBody = document.getElementById('keywords-body');
+      const kwSection = document.getElementById('keywords-section');
+      if (kwBody && kwSection) {
+        kwSection.style.display = 'block';
+        renderKeywords(currentKeywords, kwBody);
+      }
+    }
+
     finishProgressSteps();
     setTimeout(() => showResults(), 200);
     addChatMessage(`Audit complete. Score: ${result.score}/100 (${result.grade}). Open Fixes tab for recommendations.`, 'ai', false);
@@ -2603,7 +2629,6 @@ function buildReportJson(audit, pageData, url, keywords) {
   const issues   = audit.issues || [];
   const critical = issues.filter(i => i.type === 'critical');
   const warnings = issues.filter(i => i.type === 'warning');
-  const passed   = issues.filter(i => i.type === 'good' || i.type === 'pass');
   const ps       = audit.pageSpeedInsights || {};
   const local    = audit._localSEO || {};
 
@@ -2614,13 +2639,29 @@ function buildReportJson(audit, pageData, url, keywords) {
   const wordCount = pageData.wordCount || 0;
   const imgMissing = pageData.imgsMissingAlt || [];
 
-  const statusOf = (ok, warn, bad) => ok ? 'good' : warn ? 'warn' : 'bad';
+  // Build onPage first so we can count passed checks from actual statuses
+  const onPageData = {
+    title:           { value: pageData.title || '', length: titleLen, status: !pageData.title ? 'bad' : (titleLen >= 50 && titleLen <= 60 ? 'good' : 'warn') },
+    metaDescription: { value: pageData.metaDescription || '', length: metaLen, status: !pageData.metaDescription ? 'bad' : (metaLen >= 140 && metaLen <= 165 ? 'good' : 'warn') },
+    h1:              { count: h1s.length, values: h1s.slice(0, 3), status: h1s.length === 1 ? 'good' : h1s.length === 0 ? 'bad' : 'warn' },
+    canonical:       { url: pageData.canonical || '', status: pageData.canonical ? 'good' : 'warn' },
+    robots:          { value: pageData.robots || 'index,follow', status: !(pageData.robots || '').includes('noindex') ? 'good' : 'bad' },
+    og:              { title: pageData.og?.title || '', description: pageData.og?.description || '', image: pageData.og?.image || '', status: (pageData.og?.title && pageData.og?.description && pageData.og?.image) ? 'good' : pageData.og?.title ? 'warn' : 'bad' },
+    schema:          { types: pageData.schemaTypes || [], status: (pageData.schemaTypes || []).length > 0 ? 'good' : 'warn' },
+    images:          { total: (pageData.images || []).length, missingAlt: imgMissing.length, status: imgMissing.length === 0 ? 'good' : imgMissing.length <= 3 ? 'warn' : 'bad' },
+    wordCount,
+    headings: pageData.headings || [],
+  };
+  const passedCount = Object.values(onPageData).filter(v => v && typeof v === 'object' && v.status === 'good').length;
 
   // Composite scores
   const onPageScore  = audit.onPageScore  ?? Math.round(100 - (critical.length * 12) - (warnings.length * 5));
   const techScore    = audit.techScore    ?? (ps.performanceScore != null ? Math.round(ps.performanceScore) : null);
   const contentScore = audit.contentScore ?? (wordCount >= 1000 ? 85 : wordCount >= 500 ? 65 : 40);
   const localScore   = audit.localScore   ?? null;
+
+  // CLS from CrUX is stored as integer × 1000 (e.g. 19 = 0.019)
+  const clsValue = ps.crux?.cls != null ? +(ps.crux.cls / 1000).toFixed(3) : null;
 
   return {
     version: '2.0',
@@ -2642,24 +2683,13 @@ function buildReportJson(audit, pageData, url, keywords) {
     issueSummary: {
       critical: critical.length,
       warnings: warnings.length,
-      passed:   passed.length,
+      passed:   passedCount,
       total:    issues.length,
     },
-    onPage: {
-      title:           { value: pageData.title || '', length: titleLen, status: !pageData.title ? 'bad' : (titleLen >= 50 && titleLen <= 60 ? 'good' : 'warn') },
-      metaDescription: { value: pageData.metaDescription || '', length: metaLen, status: !pageData.metaDescription ? 'bad' : (metaLen >= 140 && metaLen <= 165 ? 'good' : 'warn') },
-      h1:              { count: h1s.length, values: h1s.slice(0, 3), status: h1s.length === 1 ? 'good' : h1s.length === 0 ? 'bad' : 'warn' },
-      canonical:       { url: pageData.canonical || '', status: pageData.canonical ? 'good' : 'warn' },
-      robots:          { value: pageData.robots || 'index,follow', status: !(pageData.robots || '').includes('noindex') ? 'good' : 'bad' },
-      og:              { title: pageData.og?.title || '', description: pageData.og?.description || '', image: pageData.og?.image || '', status: (pageData.og?.title && pageData.og?.description && pageData.og?.image) ? 'good' : pageData.og?.title ? 'warn' : 'bad' },
-      schema:          { types: pageData.schemaTypes || [], status: (pageData.schemaTypes || []).length > 0 ? 'good' : 'warn' },
-      images:          { total: (pageData.images || []).length, missingAlt: imgMissing.length, status: imgMissing.length === 0 ? 'good' : imgMissing.length <= 3 ? 'warn' : 'bad' },
-      wordCount,
-      headings: pageData.headings || [],
-    },
+    onPage: onPageData,
     technical: {
       pageSpeed: {
-        mobile:  { score: ps.performanceScore ?? null, fcp: ps.fcp ?? null, lcp: ps.lcp ?? null, cls: ps.cls ?? null, tbt: ps.tbt ?? null },
+        mobile:  { score: ps.performanceScore ?? null, fcp: ps.crux?.fcp ?? null, lcp: ps.crux?.lcp ?? null, cls: clsValue, tbt: ps.tbt ?? null },
         desktop: { score: ps.desktopScore ?? null },
       },
       opportunities: (ps.opportunities || []).slice(0, 6),
@@ -3023,14 +3053,17 @@ function rptKeywordsSection(d) {
 function rptOffPageSection(d) {
   if (!d.backlinks) return '';
   const bl = d.backlinks;
-  return rptCard('Off-Page / Backlinks', '#7c3aed', `
+  const pr = bl.pageRank ?? bl.openPageRank ?? bl.domainRating ?? '--';
+  const dr = bl.domainRank != null ? `#${Number(bl.domainRank).toLocaleString()}` : (bl.referringDomains ?? '--');
+  const tbl = bl.totalBacklinks ?? (bl.domainRank != null ? 'See OpenPageRank' : '--');
+  return rptCard('Off-Page / Domain Authority', '#7c3aed', `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
       ${[
-        ['Domain Rating', bl.domainRating ?? bl.openPageRank ?? '--', 'out of 100'],
-        ['Total Backlinks', bl.totalBacklinks ?? '--', 'inbound links'],
-        ['Referring Domains', bl.referringDomains ?? '--', 'unique domains'],
+        ['Google PageRank', pr, 'scale 0–10'],
+        ['Domain Rank', dr, 'global position'],
+        ['Source', rptEsc(bl.source || 'OpenPageRank'), bl.status === 'ok' ? 'live data' : 'unavailable'],
       ].map(([label, val, note]) => `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:14px;text-align:center;">
-        <div style="font-size:24px;font-weight:800;color:#1e293b;">${rptEsc(String(val))}</div>
+        <div style="font-size:${String(val).length > 6 ? '14' : '24'}px;font-weight:800;color:#1e293b;">${rptEsc(String(val))}</div>
         <div style="font-size:11px;font-weight:700;color:#0f172a;margin:3px 0;">${label}</div>
         <div style="font-size:10px;color:#94a3b8;">${note}</div>
       </div>`).join('')}
