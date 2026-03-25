@@ -193,78 +193,34 @@ export async function getConversationContextSummary(url, userId) {
  * Save and retrieve generated reports
  */
 
+// audit_reports table merged into audits.report_json — this is now a no-op
 export async function saveAuditReport(url, auditData, userId) {
-  if (!userId) {
-    console.error('❌ Cannot save report without userId');
-    return null;
-  }
-
-  const { data, error } = await supabase
-    .from('audit_reports')
-    .insert([
-      {
-        url,
-        user_id: userId,
-        score: auditData.score,
-        grade: auditData.grade,
-        issues: auditData.issues,
-        categories: auditData.categories,
-        page_speed_insights: auditData.pageSpeedInsights,
-        performance: auditData.performance,
-        is_public: false,
-        created_at: new Date().toISOString(),
-      }
-    ])
-    .select();
-
-  if (error) {
-    console.error('Error saving report:', error);
-    return null;
-  }
-
-  console.log(`📊 Report saved with ID: ${data?.[0]?.id}`);
-  return data?.[0]?.id;
+  return null;
 }
 
 /**
  * Get audit reports for a URL and user (last 50)
  */
+// audit_reports merged into audits — query audits table instead
 export async function getAuditReports(url, userId, limit = 50) {
-  const { data, error } = await supabase
-    .from('audit_reports')
-    .select('*')
-    .eq('url', url)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching reports:', error);
-    return [];
-  }
-
-  return data || [];
+  if (!supabase) return [];
+  try {
+    let hostname;
+    try { hostname = new URL(url).hostname; } catch { hostname = url; }
+    const { data, error } = await supabase
+      .from('audits')
+      .select('id, url, score, grade, report_json, created_at')
+      .eq('hostname', hostname)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    return error ? [] : (data || []);
+  } catch { return []; }
 }
 
-/**
- * Get latest report for a URL and user
- */
 export async function getLatestReport(url, userId) {
-  const { data, error } = await supabase
-    .from('audit_reports')
-    .select('*')
-    .eq('url', url)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching latest report:', error);
-    return null;
-  }
-
-  return data;
+  const reports = await getAuditReports(url, userId, 1);
+  return reports[0] || null;
 }
 
 /**

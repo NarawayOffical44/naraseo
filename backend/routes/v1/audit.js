@@ -229,7 +229,7 @@ router.post('/', featureAccess('audit'), async (req, res) => {
       url,
       score,
       grade,
-      data: auditData,
+      report_json: auditData,
       userId: req.user?.id,
     }).catch(() => {});
 

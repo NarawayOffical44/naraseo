@@ -29,15 +29,15 @@
  * Save an audit result. Returns the saved record or null on failure.
  * Silently no-ops if Supabase is not configured (DEMO_MODE / missing URL).
  */
-export async function saveAudit(supabase, { id, url, score, grade, data, userId }) {
+export async function saveAudit(supabase, { id, url, score, grade, data, report_json, userId }) {
   if (!supabase) return null;
   try {
-    let domain;
-    try { domain = new URL(url).hostname; } catch { domain = url; }
+    let hostname;
+    try { hostname = new URL(url).hostname; } catch { hostname = url; }
 
     const { data: row, error } = await supabase
       .from('audits')
-      .insert({ id, url, domain, user_id: userId || null, score, grade, data })
+      .insert({ id, url, hostname, user_id: userId || null, score, grade, report_json: report_json || data })
       .select()
       .single();
 
@@ -79,13 +79,13 @@ export async function getAudit(supabase, id) {
 export async function getAuditHistory(supabase, url, limit = 20) {
   if (!supabase) return [];
   try {
-    let domain;
-    try { domain = new URL(url).hostname; } catch { domain = url; }
+    let hostname;
+    try { hostname = new URL(url).hostname; } catch { hostname = url; }
 
     const { data, error } = await supabase
       .from('audits')
       .select('id, url, score, grade, created_at')
-      .eq('domain', domain)
+      .eq('hostname', hostname)
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) return [];
@@ -101,12 +101,12 @@ export async function getAuditHistory(supabase, url, limit = 20) {
 export async function saveRankSnapshot(supabase, { url, keyword, userId, avgRank, coverage, gridSize, points }) {
   if (!supabase) return null;
   try {
-    let domain;
-    try { domain = new URL(url).hostname; } catch { domain = url; }
+    let hostname;
+    try { hostname = new URL(url).hostname; } catch { hostname = url; }
 
     const { data, error } = await supabase
       .from('rank_snapshots')
-      .insert({ url, domain, keyword, user_id: userId || null, avg_rank: avgRank, coverage, grid_size: gridSize, points })
+      .insert({ url, hostname, keyword, user_id: userId || null, avg_rank: avgRank, coverage, grid_size: gridSize, points })
       .select()
       .single();
 
@@ -129,13 +129,13 @@ export async function saveRankSnapshot(supabase, { url, keyword, userId, avgRank
 export async function getRankHistory(supabase, url, keyword, limit = 30) {
   if (!supabase) return [];
   try {
-    let domain;
-    try { domain = new URL(url).hostname; } catch { domain = url; }
+    let hostname;
+    try { hostname = new URL(url).hostname; } catch { hostname = url; }
 
     const { data, error } = await supabase
       .from('rank_snapshots')
       .select('id, url, keyword, avg_rank, coverage, grid_size, created_at')
-      .eq('domain', domain)
+      .eq('hostname', hostname)
       .eq('keyword', keyword)
       .order('created_at', { ascending: false })
       .limit(limit);
