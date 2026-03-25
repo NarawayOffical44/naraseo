@@ -145,9 +145,6 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// ── Serve website (landing, login, dashboard) ────────────────────────────────
-app.use(express.static(join(__dirname, '../website')));
-
 // ── Mount Public API v1 with authentication ──────────────────────────────────
 app.disable('x-powered-by');
 app.use('/api/v1', apiKeyAuth(supabase), rateLimitMiddleware, whiteLabelHeaders, v1Router);
