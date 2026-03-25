@@ -2882,6 +2882,13 @@ app.get('/health', (req, res) => {
 });
 
 /**
+ * Self-ping every 4 minutes to prevent Render free tier sleep
+ */
+setInterval(() => {
+  fetch('https://naraseoai.onrender.com/api/v1/health').catch(() => {});
+}, 4 * 60 * 1000);
+
+/**
  * Start server — with EADDRINUSE auto-recovery
  */
 const server = app.listen(PORT, () => {
