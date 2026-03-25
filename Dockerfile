@@ -25,8 +25,6 @@ COPY backend/lib/ ./lib/
 COPY backend/middleware/ ./middleware/
 COPY backend/mcp/ ./mcp/
 
-# Copy website files (served from ../website relative to /app = /website)
-COPY index.html login.html dashboard.html docs.html help.html logo.png /website/
 
 EXPOSE 3001
 
