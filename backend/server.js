@@ -1037,8 +1037,8 @@ async function analyzePageNative(url) {
   const viewport     = !!html.match(/<meta[^>]+name=["']viewport["']/i);
   const hasSchema    = html.includes('application/ld+json');
 
-  const h1Tags   = getAll(/<h1[^>]*>([^<]+)<\/h1>/i, 1);
-  const h2Tags   = getAll(/<h2[^>]*>([^<]+)<\/h2>/i, 1);
+  const h1Tags   = getAll(/<h1[^>]*>([\s\S]*?)<\/h1>/i, 1).map(t => t.replace(/<[^>]+>/g,'').trim()).filter(Boolean);
+  const h2Tags   = getAll(/<h2[^>]*>([\s\S]*?)<\/h2>/i, 1).map(t => t.replace(/<[^>]+>/g,'').trim()).filter(Boolean);
   const imgTags  = getAll(/<img([^>]+)>/gi, 1).map(a => ({
     src:    (a.match(/src=["']([^"']+)["']/i) || [])[1] || '',
     alt:    (a.match(/alt=["']([^"']*?)["']/i) || [])[1] ?? null,
@@ -1054,7 +1054,7 @@ async function analyzePageNative(url) {
     imagesWithoutAlt: imgTags.filter(i => i.alt === null || i.alt === '').length,
     canonical, robots,
     ogTitle, ogDescription: ogDesc, ogImage,
-    viewport, hasSchema,
+    hasViewport: viewport, viewport, hasSchema,
     wordCount,
     url,
   };
@@ -1075,28 +1075,35 @@ function normalizePageData(d, url) {
   const h1Tags   = d.h1Tags   || [];
   const headings = d.headings || [];
 
+  const metaDescStr = d.metaDescription || d.metaDesc || '';
+  const metaDescLen = d.metaDescLength || d.metaDescriptionLength || metaDescStr.length;
+
   return {
     title:               d.title             || '',
     titleLength:         d.titleLength        || (d.title || '').length,
-    metaDescription:     d.metaDescription    || '',
-    metaDescriptionLength: d.metaDescLength   || (d.metaDescription || '').length,
+    metaDescription:     metaDescStr,
+    metaDescriptionLength: metaDescLen,
+    // aliases used by generateIssuesFromRealData
+    metaDesc:            metaDescStr,
+    metaDescLength:      metaDescLen,
     h1:                  h1Tags[0]            || '',
     h1Count:             h1Tags.length,
-    h2Count:             headings.filter(h => h.level === 2).length,
-    h3Count:             headings.filter(h => h.level === 3).length,
+    h2Count:             headings.filter(h => h.level === 2).length || (d.h2Tags || []).length,
+    h3Count:             headings.filter(h => h.level === 3).length || (d.h3Tags || []).length,
     imageCount:          d.imageCount         || 0,
     imagesWithoutAlt:    (d.imgsMissingAlt || []).length,
     internalLinkCount:   d.internalLinkCount  || 0,
     externalLinkCount:   d.externalLinkCount  || 0,
     wordCount:           d.wordCount          || 0,
-    hasViewport:         d.hasViewport        || false,
-    charset:             true,                 // page is already loaded in browser → charset fine
+    hasViewport:         d.hasViewport        || d.viewport || false,
+    viewport:            d.hasViewport        || d.viewport || false,
+    charset:             true,
     canonical:           d.canonical          || '',
     https:               (d.url || url || '').startsWith('https://'),
-    ogTitle:             d.og?.title          || '',
-    ogDesc:              d.og?.description    || '',
-    ogImage:             d.og?.image          || '',
-    hasSchema:           (d.schemaTypes || []).length > 0,
+    ogTitle:             d.og?.title          || d.ogTitle || '',
+    ogDesc:              d.og?.description    || d.ogDesc  || d.ogDescription || '',
+    ogImage:             d.og?.image          || d.ogImage || '',
+    hasSchema:           (d.schemaTypes || []).length > 0 || d.hasSchema || false,
     url:                 d.url                || url,
     htmlSizeKb:          d.htmlSizeKb         || 0,
   };
