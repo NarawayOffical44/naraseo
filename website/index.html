@@ -960,7 +960,7 @@
     setFeedback('<div class="demo-msg loading"><div class="spinner"></div>Analyzing page&hellip;</div>');
 
     try {
-      const res = await fetch(API_BASE + '/api/v1/audit', {
+      const res = await fetch(API_BASE + '/api/demo/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })

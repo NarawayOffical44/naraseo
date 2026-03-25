@@ -148,6 +148,33 @@ app.use(express.json({ limit: '10mb' }));
 // ── Serve website (landing, login, dashboard) ────────────────────────────────
 app.use(express.static(join(__dirname, '../website')));
 
+// ── Public demo endpoint (landing page only — IP rate limited, no API key needed) ──
+const demoIpHits = new Map();
+app.post('/api/demo/audit', async (req, res) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const windowMs = 24 * 60 * 60 * 1000; // 24 hours
+  const hits = (demoIpHits.get(ip) || []).filter(t => now - t < windowMs);
+  if (hits.length >= 5) {
+    return res.status(429).json({ success: false, error: { code: 'DEMO_LIMIT', message: 'Demo limit: 5 audits per day. Sign up for full access.' } });
+  }
+  hits.push(now);
+  demoIpHits.set(ip, hits);
+
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ success: false, error: { code: 'MISSING_URL', message: 'url required' } });
+  try { new URL(url); } catch { return res.status(400).json({ success: false, error: { code: 'INVALID_URL', message: 'Invalid URL' } }); }
+
+  try {
+    const { auditPage } = await import('./lib/seoEngine.js');
+    const result = await auditPage(url);
+    if (!result.success) return res.status(500).json({ success: false, error: { code: 'AUDIT_FAILED', message: result.error } });
+    return res.json({ success: true, data: result.data, meta: { demo: true, signupUrl: 'https://naraseo.ai/login.html' } });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: e.message } });
+  }
+});
+
 // ── Mount Public API v1 with authentication ──────────────────────────────────
 app.disable('x-powered-by');
 app.use('/api/v1', apiKeyAuth(supabase), rateLimitMiddleware, whiteLabelHeaders, v1Router);

@@ -117,11 +117,14 @@ export function apiKeyAuth(supabase) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // Allow unauthenticated requests to public endpoints
-      req.apiKey = null;
-      req.tier = 'free';
-      req.user = null;
-      return next();
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'MISSING_API_KEY',
+          message: 'API key required. Get yours at https://naraseo.ai/dashboard',
+          docs: 'https://naraseo.ai/docs.html#auth',
+        },
+      });
     }
 
     const token = authHeader.slice(7);
