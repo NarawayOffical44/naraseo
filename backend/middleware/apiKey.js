@@ -166,9 +166,10 @@ export function apiKeyAuth(supabase) {
       // Not a Supabase JWT, try API key
     }
 
-    // Try API key lookup
+    // Try API key lookup (strip nrs_ prefix before hashing)
     try {
-      const hashedKey = hashApiKey(token);
+      const rawKey = token.startsWith('nrs_') ? token.slice(4) : token;
+      const hashedKey = hashApiKey(rawKey);
       const { data: keyRecord, error } = await supabase
         .from('api_keys')
         .select('user_id, tier, active')
