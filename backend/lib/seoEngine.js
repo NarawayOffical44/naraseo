@@ -60,9 +60,9 @@ function parseHTML(html) {
   const robotsMatch = html.match(/<meta\s+name=["']robots["']\s+content=["']([^"']+)["']/i);
   if (robotsMatch) data.robots = robotsMatch[1];
 
-  // Headings (h1-h6)
+  // Headings (h1-h6) — allow child tags like <br>, <span> inside headings
   for (let i = 1; i <= 6; i++) {
-    const regex = new RegExp(`<h${i}[^>]*>([^<]+)<\\/h${i}>`, 'gi');
+    const regex = new RegExp(`<h${i}[^>]*>([\\s\\S]*?)<\\/h${i}>`, 'gi');
     let match;
     while ((match = regex.exec(html)) !== null) {
       const text = match[1].replace(/<[^>]+>/g, '').trim();
