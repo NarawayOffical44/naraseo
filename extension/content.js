@@ -18,8 +18,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     clearHighlights();
     sendResponse({ success: true });
   } else if (request.action === 'GET_PAGE_DATA') {
-    const pageData = extractPageData();
-    sendResponse(pageData);
+    try {
+      const pageData = extractPageData();
+      sendResponse(pageData);
+    } catch (err) {
+      console.error('extractPageData error:', err);
+      // Return partial data even if extraction fails
+      sendResponse({
+        url: window.location.href,
+        title: document.title,
+        metaDescription: document.querySelector('meta[name="description"]')?.content || '',
+        error: err.message
+      });
+    }
   } else if (request.action === 'ANALYZE_LOCAL_SEO') {
     const localData = analyzeLocalSEO();
     sendResponse({ localData });

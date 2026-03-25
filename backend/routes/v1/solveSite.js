@@ -14,7 +14,7 @@ import express from 'express';
 import https from 'https';
 import http from 'http';
 import Anthropic from '@anthropic-ai/sdk';
-import { auditPage } from '../../lib/seoEngine.js';
+import { auditPage, detectSPA } from '../../lib/seoEngine.js';
 import { featureAccess, sendApiError } from '../../middleware/apiKey.js';
 import crypto from 'crypto';
 
@@ -135,6 +135,15 @@ router.post('/', featureAccess('audit'), async (req, res) => {
       return sendApiError(res, 'ALL_AUDITS_FAILED', 'Could not audit any pages on this site', 502);
     }
 
+    // Detect SPA and warn if only homepage audited (no sitemap)
+    let spaWarning = null;
+    if (successful.length > 0 && successful[0].rawHtml) {
+      const isFirstPageSPA = detectSPA(successful[0].rawHtml, successful[0].data.pageData);
+      if (isFirstPageSPA && discoveryMethod === 'root-only') {
+        spaWarning = 'This site uses client-side rendering (React/Vue/Angular). Only the homepage was audited because no sitemap was found. For complete analysis, add a sitemap or use /api/v1/audit for single-page analysis.';
+      }
+    }
+
     // Step 3 — Aggregate for Claude synthesis
     const scores = successful.map(r => r.data.score);
     const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
@@ -245,6 +254,7 @@ Return ONLY this JSON structure:
         pagesFailed: failed.length,
         siteScore: avgScore,
         scoreRange: { min: minScore, max: maxScore },
+        ...(spaWarning && { spaWarning }),
         ...plan,
         topIssues,
         worstPages,

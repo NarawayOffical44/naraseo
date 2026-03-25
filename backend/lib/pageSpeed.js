@@ -74,6 +74,16 @@ export async function getPageSpeedInsights(url) {
               interactive:             lh.audits?.['interactive']?.displayValue                ?? null,
             },
 
+            seoAudits: {
+              title: lh.audits?.['document-title']?.displayValue ?? null,
+              metaDescription: lh.audits?.['meta-description']?.displayValue ?? null,
+              canonical: lh.audits?.['canonical']?.displayValue ?? null,
+              hasStructuredData: (lh.audits?.['structured-data']?.score ?? 0) > 0,
+              hreflangCount: lh.audits?.['hreflang']?.details?.items?.length ?? 0,
+              imagesWithoutAlt: lh.audits?.['image-alt']?.details?.items?.length ?? 0,
+              finalUrl: lh.finalUrl ?? null,
+            },
+
             opportunities: Object.values(lh.audits || {})
               .filter(a => a.scoreDisplayMode === 'opportunity' && a.score < 1)
               .map(a => ({ id: a.id, title: a.title, description: a.description, savingsMs: a.details?.overallSavingsMs || 0, score: a.score }))

@@ -202,6 +202,14 @@ async function fetchURL(urlString) {
   });
 }
 
+// Detect if page is a Client-Side Rendered SPA (React, Vue, Angular)
+function detectSPA(html, pageData) {
+  const hasSPARoot = /<div[^>]+id=["'](root|app)["']/i.test(html);
+  const hasReactBundle = /chunk\.js|bundle\.js|react|vue|angular/i.test(html);
+  const isEmpty = pageData.wordCount < 50 && pageData.h1.length === 0 && !pageData.title;
+  return hasSPARoot && (isEmpty || hasReactBundle);
+}
+
 // Calculate SEO score based on signals
 function calculateScore(pageData) {
   let score = 50; // Start at 50
@@ -309,6 +317,7 @@ export async function auditPage(url) {
 
     return {
       success: true,
+      rawHtml: html,
       data: {
         url,
         score,
@@ -326,11 +335,12 @@ export async function auditPage(url) {
   }
 }
 
-export { fetchURL };
+export { fetchURL, detectSPA };
 
 export default {
   auditPage,
   parseHTML,
   fetchURL,
   calculateScore,
+  detectSPA,
 };

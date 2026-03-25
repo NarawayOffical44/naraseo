@@ -3,7 +3,7 @@
  * Uses native HTTP (no Puppeteer) for speed and low resource usage
  */
 
-import { auditPage } from './seoEngine.js';
+import { auditPage, detectSPA } from './seoEngine.js';
 import https from 'https';
 import { URL } from 'url';
 
@@ -119,12 +119,15 @@ export async function crawlSite(startUrl, options = {}) {
     const robotsInfo = respectRobots ? await parseRobotsTxt(domain) : { crawlDelay: 1000 };
 
     const visited = new Set();
-    const toVisit = [startUrl];
+    const toVisit = [{ url: startUrl, depth: 0 }];
     const results = [];
     const errors = [];
     let activeCrawls = 0;
+    let isSPADetected = false;
 
-    const crawlPage = async (url, depth) => {
+    const crawlPage = async (urlItem) => {
+      const { url, depth } = urlItem;
+
       if (visited.has(url) || visited.size >= maxPages || depth > maxDepth) {
         return;
       }
@@ -136,6 +139,11 @@ export async function crawlSite(startUrl, options = {}) {
         // Fetch and audit
         const html = await fetchURL(url);
         const auditResult = await auditPage(url);
+
+        // Detect SPA on first page
+        if (results.length === 0 && auditResult.rawHtml && auditResult.success) {
+          isSPADetected = detectSPA(auditResult.rawHtml, auditResult.data.pageData);
+        }
 
         if (auditResult.success) {
           const pageResult = {
@@ -156,7 +164,7 @@ export async function crawlSite(startUrl, options = {}) {
             const newLinks = extractLinksFromHTML(html, url);
             for (const link of newLinks) {
               if (!visited.has(link) && toVisit.length < maxPages) {
-                toVisit.push(link);
+                toVisit.push({ url: link, depth: depth + 1 });
               }
             }
           }
@@ -180,10 +188,24 @@ export async function crawlSite(startUrl, options = {}) {
 
     // Crawl with concurrency control
     while (toVisit.length > 0 || activeCrawls > 0) {
+      // Early exit if SPA detected on first page
+      if (isSPADetected && results.length > 0) {
+        return {
+          success: false,
+          warning: 'spa-detected',
+          message: 'This site uses client-side rendering (React/Vue/Angular). Page discovery via link crawling is not possible. Use /api/v1/audit for single-page analysis, or provide a sitemap URL via /api/v1/solve-site.',
+          data: {
+            startUrl,
+            domain,
+            totalPagesFound: 1,
+            pages: results,
+          },
+        };
+      }
+
       while (activeCrawls < concurrency && toVisit.length > 0 && visited.size < maxPages) {
-        const url = toVisit.shift();
-        const depth = url === startUrl ? 0 : 1;
-        crawlPage(url, depth);
+        const urlItem = toVisit.shift();
+        crawlPage(urlItem);
       }
 
       // Wait a bit before checking again

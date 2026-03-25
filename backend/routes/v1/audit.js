@@ -73,6 +73,16 @@ router.post('/', featureAccess('audit'), async (req, res) => {
     }
 
     const { score, grade, pageData, issues } = auditResult.data;
+    const rawHtml = auditResult.rawHtml;
+    const isSPA = rawHtml ? seoEngine.detectSPA(rawHtml, pageData) : false;
+
+    // If SPA detected, fallback to Lighthouse-rendered data for missing fields
+    if (isSPA && ps?.seoAudits) {
+      if (!pageData.title && ps.seoAudits.title) pageData.title = ps.seoAudits.title;
+      if (!pageData.metaDescription && ps.seoAudits.metaDescription) pageData.metaDescription = ps.seoAudits.metaDescription;
+      if (!pageData.canonical && ps.seoAudits.canonical) pageData.canonical = ps.seoAudits.canonical;
+    }
+
     const { score: perfScore, issues: cwvIssues } = cwvToScore(ps);
 
     // Merge CWV issues into the issues list
@@ -111,7 +121,12 @@ router.post('/', featureAccess('audit'), async (req, res) => {
       url,
       score,
       grade,
+      isSPA,
+      ...(isSPA && { spaNote: 'Content extracted via Google Lighthouse (JS-rendered)' }),
       categoryScores,
+      onPageScore: categoryScores.onPage,
+      techScore: categoryScores.technical,
+      contentScore: categoryScores.content,
       issues: allIssues.map(issue => ({
         id: issue.id,
         type: issue.type,
@@ -121,15 +136,60 @@ router.post('/', featureAccess('audit'), async (req, res) => {
       })),
       pageData: {
         title: pageData.title,
+        titleLength: pageData.title?.length || 0,
         metaDescription: pageData.metaDescription,
+        metaDescLength: pageData.metaDescription?.length || 0,
         h1: pageData.h1,
+        h1Tags: pageData.h1,
         h2: pageData.h2,
+        h3: pageData.h3,
+        h4: pageData.h4,
+        h5: pageData.h5,
+        h6: pageData.h6,
+        headings: [
+          ...pageData.h1.map(t => ({ level: 1, text: t })),
+          ...pageData.h2.map(t => ({ level: 2, text: t })),
+          ...pageData.h3.map(t => ({ level: 3, text: t })),
+          ...pageData.h4.map(t => ({ level: 4, text: t })),
+          ...pageData.h5.map(t => ({ level: 5, text: t })),
+          ...pageData.h6.map(t => ({ level: 6, text: t })),
+        ],
         wordCount: pageData.wordCount,
         imageCount: pageData.images.length,
+        imageDetails: pageData.images.map(img => ({ src: img.src, alt: img.alt, hasAlt: img.hasAlt })),
+        imgsMissingAlt: pageData.images.filter(img => !img.hasAlt).map(img => img.src),
         linkCount: pageData.allLinks.length,
         internalLinks: pageData.internalLinks.length,
         externalLinks: pageData.externalLinks.length,
+        internalLinkDetails: pageData.internalLinks,
+        externalLinkDetails: pageData.externalLinks,
+        canonical: pageData.canonical,
+        robots: pageData.robots,
+        og: pageData.openGraph,
+        twitter: pageData.twitterCard,
+        schemaTypes: pageData.jsonLD.map(s => s['@type']).filter(Boolean),
+        viewport: pageData.viewport,
+        charset: pageData.charset,
       },
+      pageSpeedInsights: ps ? {
+        performanceScore: ps.performanceScore,
+        seoScore: ps.seoScore,
+        accessibilityScore: ps.accessibilityScore,
+        bestPracticesScore: ps.bestPracticesScore,
+        crux: {
+          lcp: ps.crux?.lcp,
+          lcpCategory: ps.crux?.lcpCategory,
+          cls: ps.crux?.cls,
+          clsCategory: ps.crux?.clsCategory,
+          inp: ps.crux?.inp,
+          inpCategory: ps.crux?.inpCategory,
+          fcp: ps.crux?.fcp,
+          fcpCategory: ps.crux?.fcpCategory,
+        },
+        lighthouse: ps.lighthouse,
+        opportunities: ps.opportunities,
+        source: 'Google PageSpeed Insights API',
+      } : null,
       coreWebVitals: ps ? {
         performanceScore: ps.performanceScore,
         seoScore: ps.seoScore,

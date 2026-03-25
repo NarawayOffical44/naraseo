@@ -1737,7 +1737,9 @@ async function runAudit() {
 
   // Step 1: DOM data from content script — instant, no network
   let pageData = null;
-  try { pageData = await getPageData(tab.id); } catch {}
+  try { pageData = await getPageData(tab.id); } catch (err) {
+    console.error('getPageData failed:', err);
+  }
 
   activateStep(2); // Step 2: Core Web Vitals + AI Keyword Analysis (parallel)
 
@@ -1786,7 +1788,12 @@ async function runAudit() {
       result = await response.json();
     } else {
       // No DOM data — page behind login wall or content script blocked
-      throw new Error('Could not read page content. If this page requires login, make sure you are logged in and the page is fully loaded, then try again.');
+      const errorMsg = 'Could not read page content. This can happen if:\n' +
+        '• The page requires login — make sure you\'re logged in\n' +
+        '• The page is still loading — wait and try again\n' +
+        '• The page is restricted (chrome://, file://, PDF, etc.)\n\n' +
+        'Try reloading the page and auditing again.';
+      throw new Error(errorMsg);
     }
 
     // Merge pageData fields so SERP preview, report etc. can access title/meta/OG
@@ -2362,27 +2369,45 @@ async function updateFixesList() {
  */
 async function getPageData(tabId) {
   // First attempt
-  const first = await _sendGetPageData(tabId);
-  if (first && Object.keys(first).length > 3) return first; // got real data
+  try {
+    const first = await _sendGetPageData(tabId);
+    if (first && Object.keys(first).length > 3) return first; // got real data
+  } catch (err) {
+    console.warn('First attempt failed:', err.message);
+  }
 
   // Content script not responding — try injecting it
   try {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
     await new Promise(r => setTimeout(r, 250)); // let script initialise
-  } catch {
+  } catch (err) {
     // Restricted page (chrome://, PDF, etc.) — can't inject
+    console.warn('Content script injection failed:', err.message);
     return null;
   }
 
   // Second attempt after injection
-  return _sendGetPageData(tabId);
+  try {
+    return await _sendGetPageData(tabId);
+  } catch (err) {
+    console.warn('Second attempt failed:', err.message);
+    return null;
+  }
 }
 
 function _sendGetPageData(tabId) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Content script timeout'));
+    }, 5000); // 5 second timeout
+
     chrome.tabs.sendMessage(tabId, { action: 'GET_PAGE_DATA' }, r => {
-      void chrome.runtime.lastError; // must read to prevent uncaught-error log
-      resolve(r || null);
+      clearTimeout(timeout);
+      if (chrome.runtime.lastError) {
+        reject(new Error(`Content script error: ${chrome.runtime.lastError.message}`));
+      } else {
+        resolve(r || null);
+      }
     });
   });
 }
