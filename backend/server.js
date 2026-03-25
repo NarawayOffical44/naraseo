@@ -126,9 +126,11 @@ const ALLOWED_ORIGINS = [
   'chrome-extension://',
   'http://localhost',
   'http://127.0.0.1',
-  'https://claude.ai',          // Claude Desktop remote MCP
-  'https://chat.openai.com',    // ChatGPT Actions
-  'https://www.perplexity.ai',  // Perplexity
+  'https://naraseo.onrender.com',  // Frontend website
+  'https://naraseoai.onrender.com',// Backend itself
+  'https://claude.ai',             // Claude Desktop remote MCP
+  'https://chat.openai.com',       // ChatGPT Actions
+  'https://www.perplexity.ai',     // Perplexity
 ];
 app.use(cors({
   origin: (origin, cb) => {
@@ -527,6 +529,84 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.SITE_URL || 'https://yourdomain.com'}/reset-password`,
     });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API KEY MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/keys/generate — Generate a new API key for the logged-in user
+ * Requires: Authorization: Bearer <JWT>
+ */
+app.post('/api/keys/generate', authMiddleware, async (req, res) => {
+  try {
+    const { generateApiKey, hashApiKey } = await import('./middleware/apiKey.js');
+    const rawKey = generateApiKey();
+    const keyHash = hashApiKey(rawKey);
+    const userId = req.userId;
+
+    if (supabase) {
+      // Get user plan from profiles
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', userId).single();
+      const tier = profile?.plan || 'free';
+
+      // Store hashed key in Supabase
+      const { error } = await supabase.from('api_keys').insert({
+        user_id: userId,
+        key_hash: keyHash,
+        tier,
+        active: true,
+      });
+      if (error) return res.status(500).json({ error: 'Failed to store key: ' + error.message });
+
+      return res.json({ key: 'nrs_' + rawKey, tier, message: 'Store this key — it will not be shown again.' });
+    }
+
+    // Demo mode — return key without storing
+    res.json({ key: 'nrs_' + rawKey, tier: 'free', message: 'Demo mode: key not persisted. Connect Supabase for persistence.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/keys — List active API keys for the logged-in user (hashed, never raw)
+ * Requires: Authorization: Bearer <JWT>
+ */
+app.get('/api/keys', authMiddleware, async (req, res) => {
+  try {
+    if (!supabase) return res.json({ keys: [] });
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('id, tier, active, created_at')
+      .eq('user_id', req.userId)
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ keys: data || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * DELETE /api/keys/:id — Revoke an API key
+ * Requires: Authorization: Bearer <JWT>
+ */
+app.delete('/api/keys/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!supabase) return res.json({ success: true });
+    const { error } = await supabase
+      .from('api_keys')
+      .update({ active: false })
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId);
+    if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -738,26 +738,31 @@
     <!-- ── API KEYS TAB ── -->
     <div class="tab-panel" id="tab-apikeys">
       <div class="page-title">API Keys</div>
-      <div class="page-sub">Your JWT token is your API key. Keep it private.</div>
+      <div class="page-sub">Generate API keys to access the Naraseo API programmatically.</div>
 
       <div class="card">
-        <div class="section-h">Your API Key</div>
-        <div class="api-key-box">
-          <div class="api-key-text" id="apiKeyText">Click the eye icon to reveal</div>
-          <button class="key-toggle" id="keyToggleBtn" onclick="toggleKeyVisibility()" title="Show / hide key">
-            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/>
-              <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/>
-            </svg>
-          </button>
-          <button class="btn-copy" id="apiKeyCopyBtn" onclick="copyApiKey()">Copy</button>
-        </div>
+        <div class="section-h">Generate New API Key</div>
+        <div class="card-sub" style="margin-bottom:14px;">Keys are shown only once. Store them securely.</div>
+        <button class="btn btn-primary" onclick="generateApiKey()" id="generateKeyBtn">Generate API Key</button>
 
-        <div class="note-box mt-16">
-          Your API key is your JWT authentication token. Pass it as:
-          <code style="font-family:monospace; background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:4px; margin:0 2px;">Authorization: Bearer {token}</code>
-          in every API request. Treat it like a password — never commit it to source control.
+        <div id="newKeyBox" style="display:none; margin-top:16px;">
+          <div class="note-box" style="border-color:#6366f1;">
+            <strong>Your new API key (copy now — not shown again):</strong>
+            <div class="api-key-box" style="margin-top:8px;">
+              <div class="api-key-text" id="newKeyText" style="font-family:monospace; font-size:13px;"></div>
+              <button class="btn-copy" id="newKeyCopyBtn" onclick="copyText(document.getElementById('newKeyText').textContent, document.getElementById('newKeyCopyBtn'))">Copy</button>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-h">Active Keys</div>
+        <div id="keysList"><div style="color:#94a3b8; font-size:13px;">Loading...</div></div>
+      </div>
+
+      <div class="note-box mt-16">
+        Use your key as: <code style="font-family:monospace; background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:4px;">Authorization: Bearer nrs_yourkey</code> in every API request.
       </div>
 
       <hr class="section-divider" />
@@ -1052,6 +1057,7 @@
 
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('appLayout').style.display = 'flex';
+    loadApiKeys();
 
     // Apply API key placeholders
     document.querySelectorAll('.api-key-placeholder').forEach(el => {
@@ -1150,25 +1156,56 @@
     closeSidebar();
   }
 
-  // ── API KEY ───────────────────────────────────
-  function toggleKeyVisibility() {
-    keyVisible = !keyVisible;
-    const display = document.getElementById('apiKeyText');
-    const btn = document.getElementById('keyToggleBtn');
-
-    display.textContent = keyVisible ? (token || '—') : 'Click the eye icon to reveal';
-
-    btn.innerHTML = keyVisible
-      ? `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-           <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/>
-           <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/>
-           <path d="M2 2l12 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-         </svg>`
-      : `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-           <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/>
-           <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/>
-         </svg>`;
+  // ── API KEY GENERATION ───────────────────────────────────
+  async function generateApiKey() {
+    const btn = document.getElementById('generateKeyBtn');
+    btn.textContent = 'Generating...';
+    btn.disabled = true;
+    try {
+      const res = await fetch(API_BASE + '/api/keys/generate', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      document.getElementById('newKeyText').textContent = data.key;
+      document.getElementById('newKeyBox').style.display = 'block';
+      loadApiKeys();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.textContent = 'Generate API Key';
+      btn.disabled = false;
+    }
   }
+
+  async function loadApiKeys() {
+    try {
+      const res = await fetch(API_BASE + '/api/keys', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      const list = document.getElementById('keysList');
+      if (!data.keys?.length) { list.innerHTML = '<div style="color:#94a3b8;font-size:13px;">No API keys yet. Generate one above.</div>'; return; }
+      list.innerHTML = data.keys.map(k => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #334155;">
+          <div>
+            <span style="font-family:monospace;font-size:12px;color:#94a3b8;">nrs_••••••••••••</span>
+            <span style="margin-left:12px;font-size:11px;background:#1e293b;border:1px solid #334155;padding:2px 8px;border-radius:12px;">${k.tier}</span>
+            <span style="margin-left:8px;font-size:11px;color:#64748b;">${new Date(k.created_at).toLocaleDateString()}</span>
+          </div>
+          <button onclick="revokeKey('${k.id}')" style="background:none;border:1px solid #ef4444;color:#ef4444;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Revoke</button>
+        </div>`).join('');
+    } catch(e) { document.getElementById('keysList').innerHTML = '<div style="color:#94a3b8;font-size:13px;">Could not load keys.</div>'; }
+  }
+
+  async function revokeKey(id) {
+    if (!confirm('Revoke this API key? It will stop working immediately.')) return;
+    await fetch(API_BASE + '/api/keys/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    loadApiKeys();
+  }
+
+  function toggleKeyVisibility() {} // kept for backward compat
 
   function copyApiKey() {
     copyText(token, document.getElementById('apiKeyCopyBtn'));
