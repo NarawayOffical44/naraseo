@@ -129,6 +129,22 @@ export function apiKeyAuth(supabase) {
 
     const token = authHeader.slice(7);
 
+    // Try custom JWT first (issued by our own signToken)
+    try {
+      const JWT_SECRET = process.env.JWT_SECRET || 'seo-ai-secret-change-in-production';
+      const [header, body, sig] = token.split('.');
+      if (header && body && sig) {
+        const expected = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
+        if (sig === expected) {
+          const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
+          req.user = { id: payload.sub, email: payload.email };
+          req.tier = payload.plan || 'free';
+          req.apiKey = null;
+          return next();
+        }
+      }
+    } catch (e) { /* not a custom JWT */ }
+
     // No Supabase — treat all tokens as free tier
     if (!supabase) {
       req.apiKey = token;
@@ -137,17 +153,17 @@ export function apiKeyAuth(supabase) {
       return next();
     }
 
-    // Try JWT first (existing users)
+    // Try Supabase JWT
     try {
       const { data, error } = await supabase.auth.getUser(token);
       if (!error && data.user) {
         req.user = data.user;
-        req.apiKey = null; // JWT auth, not API key
+        req.apiKey = null;
         req.tier = data.user.user_metadata?.tier || 'free';
         return next();
       }
     } catch (e) {
-      // Not a JWT, try API key
+      // Not a Supabase JWT, try API key
     }
 
     // Try API key lookup
