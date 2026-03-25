@@ -21,7 +21,7 @@
   ],
 
   "host_permissions": [
-    "http://localhost:3001/*",
+    "https://naraseoai.onrender.com/*",
     "http://127.0.0.1:3001/*",
     "<all_urls>"
   ],

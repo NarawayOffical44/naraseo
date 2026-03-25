@@ -160,7 +160,7 @@ async function incrementAuditCount() {
 
   if (authToken) {
     try {
-      const response = await fetch('http://localhost:3001/api/usage/increment', {
+      const response = await fetch('https://naraseoai.onrender.com/api/usage/increment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -575,7 +575,7 @@ async function fetchOffPageData() {
   if (!currentAudit || !currentUrl) return;
   try {
     const fullUrl = currentAudit.url || `https://${currentUrl}`;
-    const resp = await fetch(`http://localhost:3001/api/offpage?url=${encodeURIComponent(fullUrl)}`);
+    const resp = await fetch(`https://naraseoai.onrender.com/api/offpage?url=${encodeURIComponent(fullUrl)}`);
     if (!resp.ok) return;
     const data = await resp.json();
     if (data.status === 'unavailable') return;
@@ -1114,7 +1114,7 @@ async function runKeywordResearch() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const pageData = await getPageData(tab.id);
 
-    const resp = await fetch('http://localhost:3001/api/keywords', {
+    const resp = await fetch('https://naraseoai.onrender.com/api/keywords', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: currentUrl, pageData }),
@@ -1674,7 +1674,7 @@ async function runAudit() {
   if (authToken) {
     // User is logged in — check backend limits
     try {
-      const response = await fetch('http://localhost:3001/api/usage/check', {
+      const response = await fetch('https://naraseoai.onrender.com/api/usage/check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1744,7 +1744,7 @@ async function runAudit() {
   // Step 2: PageSpeed proxy — can take 5-10s, step stays active until done
   let pageSpeed = null;
   try {
-    const psResp = await fetch(`http://localhost:3001/api/pagespeed?url=${encodeURIComponent(tab.url)}`);
+    const psResp = await fetch(`https://naraseoai.onrender.com/api/pagespeed?url=${encodeURIComponent(tab.url)}`);
     if (psResp.ok) pageSpeed = await psResp.json();
   } catch {}
 
@@ -1768,7 +1768,7 @@ async function runAudit() {
       };
     } else if (pageData) {
       // scorePageData not loaded — send DOM data to server for scoring (never Puppeteer)
-      const response = await fetch('http://localhost:3001/api/audit', {
+      const response = await fetch('https://naraseoai.onrender.com/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: tab.url, pageData }),
@@ -2103,7 +2103,7 @@ async function loadSuggestions() {
   try { pageData = await getPageData(tab.id); } catch {}
 
   try {
-    const resp = await fetch('http://localhost:3001/api/suggestions', {
+    const resp = await fetch('https://naraseoai.onrender.com/api/suggestions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: tab.url, pageData }),
@@ -2284,7 +2284,7 @@ async function updateFixesList() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const pageData = await getPageData(tab.id);
 
-    const response = await fetch('http://localhost:3001/api/fixes', {
+    const response = await fetch('https://naraseoai.onrender.com/api/fixes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: tab.url, issues: currentAudit.issues, pageData }),
@@ -3112,7 +3112,7 @@ async function downloadReport() {
     const filename = `naraseo-${hostname}-${dateSlug}.pdf`;
 
     // Send HTML to backend Puppeteer — returns real PDF binary, auto-downloads
-    const resp = await fetch('http://localhost:3001/api/v1/report/render', {
+    const resp = await fetch('https://naraseoai.onrender.com/api/v1/report/render', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ html, filename }),
@@ -3260,7 +3260,7 @@ async function handleOverlaySignup(e) {
 
 //  AUTH SYSTEM 
 
-const BACKEND = 'http://localhost:3001';
+const BACKEND = 'https://naraseoai.onrender.com';
 
 //  Check auth state on init and update account tab 
 async function initAuth() {
@@ -3561,7 +3561,7 @@ async function saveAuditToHistory(audit, pageData) {
 
   // Sync to Supabase if logged in (best-effort, non-blocking)
   if (authToken && report_json) {
-    fetch('http://localhost:3001/api/history', {
+    fetch('https://naraseoai.onrender.com/api/history', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
       body:    JSON.stringify({
@@ -3622,7 +3622,7 @@ async function renderHistoryList() {
   let mergedHistory = [...auditHistory];
   if (authToken) {
     try {
-      const resp = await fetch('http://localhost:3001/api/history', {
+      const resp = await fetch('https://naraseoai.onrender.com/api/history', {
         headers: { 'Authorization': `Bearer ${authToken}` },
         signal: AbortSignal.timeout(5000),
       });
@@ -3739,7 +3739,7 @@ async function downloadHistoryReport(id) {
     const dateStr = new Date(entry.timestamp).toISOString().slice(0, 10);
     const filename = `naraseo-${domain}-${dateStr}.pdf`;
 
-    const resp = await fetch('http://localhost:3001/api/v1/report/render', {
+    const resp = await fetch('https://naraseoai.onrender.com/api/v1/report/render', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ html, filename }),
@@ -3840,7 +3840,7 @@ async function runGeoGrid(e) {
   document.getElementById('geo-loading-sub').textContent = `Querying 0 / ${gridSize * gridSize} points`;
 
   try {
-    const resp = await fetch('http://localhost:3001/api/geo-grid', {
+    const resp = await fetch('https://naraseoai.onrender.com/api/geo-grid', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ lat, lng, keyword, domain, gridSize, radiusKm }),

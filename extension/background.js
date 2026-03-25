@@ -17,7 +17,7 @@ importScripts('lib/scorer.js');
 // API URL - uses production URL, falls back to localhost for development
 const API_URL = (typeof PROD_API_URL !== 'undefined' && PROD_API_URL)
   ? PROD_API_URL
-  : 'http://localhost:3001';
+  : 'https://naraseoai.onrender.com';
 
 // Domains that should never be auto-audited (search engines, social, apps, etc.)
 const SKIP_AUDIT_DOMAINS = new Set([

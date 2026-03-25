@@ -268,7 +268,7 @@ async function openReport() {
     btnReport.disabled = true;
 
     // Call backend to generate PDF
-    const response = await fetch('http://localhost:3001/api/report/generate', {
+    const response = await fetch('https://naraseoai.onrender.com/api/report/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ auditData: currentAudit }),
