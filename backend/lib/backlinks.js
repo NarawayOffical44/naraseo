@@ -31,11 +31,13 @@ export async function getBacklinkData(url) {
     const d = json?.response?.[0];
     if (!d) return null;
 
+    const isFound = d.status_code === 200;
     const data = {
       domain,
-      pageRank: d.page_rank_integer ?? null,   // 0–10 (Google PR scale)
-      domainRank: d.rank ?? null,              // Global rank among all domains
-      status: d.status_code === 200 ? 'ok' : 'not_found',
+      pageRank: isFound ? (d.page_rank_integer ?? null) : null,  // null if domain not in DB
+      pageRankDecimal: isFound ? (d.page_rank_decimal ?? null) : null,
+      domainRank: d.rank ?? null,
+      status: isFound ? 'ok' : 'not_found',
       source: 'OpenPageRank',
     };
 

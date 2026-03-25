@@ -538,8 +538,9 @@ function updatePillars() {
     : calcPillarScore(issues.filter(i => isTechnicalIssue(i)), 6);
 
   // Off-page: no data yet — async fetch in background
-  const offPageScore = currentAudit._offPage?.pageRank != null
-    ? Math.min(100, currentAudit._offPage.pageRank * 10)
+  const offPageRaw = currentAudit._offPage;
+  const offPageScore = (offPageRaw?.status === 'ok' && (offPageRaw?.pageRankDecimal ?? offPageRaw?.pageRank) != null)
+    ? Math.max(5, Math.min(100, Math.round((offPageRaw.pageRankDecimal ?? offPageRaw.pageRank) * 10)))
     : null;
 
   setPillar('onpage',   onPageScore,  onPageScore != null);
@@ -582,10 +583,12 @@ async function fetchOffPageData() {
 
     // Store and update UI
     currentAudit._offPage = data;
+    chrome.storage.local.set({ currentAudit });
 
-    // Update off-page pillar
-    if (data.pageRank != null) {
-      const score = Math.min(100, data.pageRank * 10);
+    // Update off-page pillar — use decimal rank for finer score, min 5 if domain is found
+    const pr = data.pageRankDecimal ?? data.pageRank;
+    if (data.status === 'ok' && pr != null) {
+      const score = Math.max(5, Math.min(100, Math.round(pr * 10)));
       setPillar('offpage', score, true);
 
       // Update the off-page items section if visible
@@ -596,13 +599,14 @@ async function fetchOffPageData() {
 }
 
 function renderOffPageData(data, container) {
-  const pr = data.pageRank != null ? data.pageRank : '--';
+  const prVal = data.pageRankDecimal ?? data.pageRank;
+  const pr = (data.status === 'ok' && prVal != null) ? prVal : '--';
   const rank = data.domainRank != null ? '#' + data.domainRank.toLocaleString() : '--';
   container.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px;">
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center;">
         <div style="font-size:24px;font-weight:900;color:#2563eb;">${pr}</div>
-        <div style="font-size:10px;color:#6b7280;font-weight:600;margin-top:2px;">PAGE RANK (0–10)</div>
+        <div style="font-size:10px;color:#6b7280;font-weight:600;margin-top:2px;">DOMAIN AUTHORITY (0–10)</div>
       </div>
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center;">
         <div style="font-size:20px;font-weight:900;color:#374151;">${rank}</div>

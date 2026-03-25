@@ -2641,16 +2641,19 @@ app.get('/api/offpage', rateLimiter(30, 60_000), async (req, res) => {
 
     if (!domainData) throw new Error('No data returned');
 
-    const pageRank = domainData.page_rank_integer ?? null;
+    const isFound = domainData.status_code === 200;
+    const pageRank = isFound ? (domainData.page_rank_integer ?? null) : null;
+    const pageRankDecimal = isFound ? (domainData.page_rank_decimal ?? null) : null;
     const domainRank = domainData.rank ?? null;
 
     res.json({
       domain,
       pageRank,
+      pageRankDecimal,
       domainRank,
-      status: domainData.status_code === 200 ? 'ok' : 'not_found',
+      status: isFound ? 'ok' : 'not_found',
       source: 'OpenPageRank',
-      note: 'PageRank 0–10 scale (Google PR). Domain Rank = relative position among all websites.',
+      note: 'Domain Authority 0–10 scale. Domain Rank = global position among all indexed domains.',
     });
   } catch (err) {
     console.error('[OPR] Off-page error:', err.message);
