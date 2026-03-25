@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help & Guides — Naraseo AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f52d6;
+      --primary-dim: rgba(99,102,241,0.15);
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #263248;
+      --border: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--primary); text-decoration: none; transition: color 0.15s; }
+    a:hover { color: var(--primary-hover); }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    .nav-logo-mark {
+      width: 26px;
+      height: 26px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ── CONTAINER ── */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 48px 32px;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .hero-text {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+
+    /* ── CARDS ── */
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+
+    .guide-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .guide-card:hover {
+      border-color: var(--primary);
+      background: linear-gradient(160deg, #1e293b 0%, #1b2444 100%);
+      transform: translateY(-2px);
+    }
+
+    .guide-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-dim);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 28px;
+    }
+
+    .guide-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .guide-card p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── EXPANDABLE SECTION ── */
+    .faq-section {
+      margin-bottom: 48px;
+    }
+
+    .faq-section h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      padding: 18px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      transition: background 0.15s;
+      user-select: none;
+    }
+
+    .faq-question:hover { background: var(--surface2); }
+
+    .faq-toggle {
+      font-size: 18px;
+      transition: transform 0.2s;
+    }
+
+    .faq-toggle.open { transform: rotate(180deg); }
+
+    .faq-answer {
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    .faq-answer.open {
+      padding: 16px 20px;
+      max-height: 500px;
+    }
+
+    /* ── STEPS ── */
+    .steps {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin: 24px 0;
+    }
+
+    .step {
+      display: flex;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .step:last-child { margin-bottom: 0; }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-content h3 {
+      margin-bottom: 6px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .step-content p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      background: linear-gradient(160deg, #1e293b 0%, #1b2444 100%);
+      border: 1px solid var(--primary);
+      border-radius: 14px;
+      padding: 40px;
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    .cta-section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      border: none;
+      padding: 0;
+    }
+
+    .cta-section p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      font-size: 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover { background: var(--primary-dim); }
+
+    /* ── NOTE ── */
+    .note {
+      background: var(--primary-dim);
+      border-left: 3px solid var(--primary);
+      padding: 16px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    .note strong { color: var(--primary); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 16px; }
+      .container { padding: 32px 16px; }
+      h1 { font-size: 26px; }
+      .guide-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <img src="logo.png" alt="Naraseo AI" style="height: 32px; width: auto;" />
+  </a>
+  <a href="index.html" class="nav-back">← Back to home</a>
+</nav>
+
+<!-- MAIN -->
+<div class="container">
+
+  <h1>Help & User Guides</h1>
+  <p class="hero-text">
+    Everything you need to know about using Naraseo AI. From installing the extension to understanding your SEO score — we've got you covered.
+  </p>
+
+  <!-- QUICK START CARDS -->
+  <div class="guide-grid">
+    <div class="guide-card" onclick="scrollToSection('getting-started')">
+      <div class="guide-icon">🚀</div>
+      <h2>Getting Started</h2>
+      <p>Create an account and run your first SEO audit in 2 minutes</p>
+    </div>
+
+    <div class="guide-card" onclick="scrollToSection('extension')">
+      <div class="guide-icon">🔧</div>
+      <h2>Install Extension</h2>
+      <p>Add Naraseo AI to your browser and audit pages on-the-fly</p>
+    </div>
+
+    <div class="guide-card" onclick="scrollToSection('understand')">
+      <div class="guide-icon">📊</div>
+      <h2>Understand Results</h2>
+      <p>What your score means and how to fix the issues</p>
+    </div>
+
+    <div class="guide-card" onclick="scrollToSection('dashboard')">
+      <div class="guide-icon">📈</div>
+      <h2>Dashboard Tour</h2>
+      <p>Navigate your profile, API key, and usage stats</p>
+    </div>
+
+    <div class="guide-card" onclick="scrollToSection('plans')">
+      <div class="guide-icon">💳</div>
+      <h2>Plans & Upgrade</h2>
+      <p>Learn what each plan includes and how to upgrade</p>
+    </div>
+
+    <div class="guide-card" onclick="scrollToSection('faq')">
+      <div class="guide-icon">❓</div>
+      <h2>FAQ</h2>
+      <p>Answers to common questions</p>
+    </div>
+  </div>
+
+  <!-- GETTING STARTED -->
+  <section id="getting-started" class="faq-section">
+    <h2>🚀 Getting Started</h2>
+
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Start analyzing your website's SEO in just a few steps.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Create Your Free Account</h3>
+          <p><a href="login.html">Sign up here</a> with your email. It takes 30 seconds and requires no credit card.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Enter Your Website URL</h3>
+          <p>Go to the <a href="index.html#extension">free demo</a> or your <a href="dashboard.html">dashboard</a> and paste your website URL.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Get Your Score Instantly</h3>
+          <p>Naraseo analyzes your page and gives you an SEO score (0-100) and letter grade (A+ to F).</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3>View Your Issues</h3>
+          <p>See what's wrong with your SEO and get specific fixes you can implement.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h3>Download Your Report</h3>
+          <p>Export a professional PDF report to share with your team or client.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      💡 <strong>Tip:</strong> You get 100 free audits per day. Start with your homepage, then test your main service/product pages.
+    </div>
+  </section>
+
+  <!-- EXTENSION GUIDE -->
+  <section id="extension" class="faq-section">
+    <h2>🔧 Chrome Extension Guide</h2>
+
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      The fastest way to audit any website. One click = instant SEO insights.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Install the Extension</h3>
+          <p>Go to <a href="index.html#extension">the homepage</a> and click "Install Extension". Chrome will ask for permission to access websites you visit.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Add Your Account</h3>
+          <p>Click the Naraseo icon → Settings → Sign in with your email and password.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Audit Any Page</h3>
+          <p>Visit any website and click the Naraseo icon. It will analyze the page in 5-10 seconds.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3>View Your Results</h3>
+          <p>See the score, issues, and quick fixes in the sidebar. Click "Full Report" for detailed analysis.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h3>Download PDF</h3>
+          <p>Click the download button to save a professional report to your computer.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      ℹ️ <strong>What's analyzed?</strong> Page title, meta description, H1 tags, images, links, Core Web Vitals, mobile friendliness, and more.
+    </div>
+  </section>
+
+  <!-- UNDERSTAND RESULTS -->
+  <section id="understand" class="faq-section">
+    <h2>📊 Understanding Your SEO Score</h2>
+
+    <h3>What's My Score?</h3>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Your SEO score is 0-100, with a letter grade (A+ down to F). Higher = better SEO health.
+    </p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <tr style="background: var(--surface2);">
+        <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border);">Score Range</th>
+        <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border);">Grade</th>
+        <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border);">What It Means</th>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 12px;">90-100</td>
+        <td style="padding: 12px;">A+, A</td>
+        <td style="padding: 12px;">Excellent SEO — likely ranking well</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 12px;">80-89</td>
+        <td style="padding: 12px;">B+, B</td>
+        <td style="padding: 12px;">Good SEO — some improvements possible</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 12px;">70-79</td>
+        <td style="padding: 12px;">C+, C</td>
+        <td style="padding: 12px;">Fair SEO — multiple issues to fix</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 12px;">60-69</td>
+        <td style="padding: 12px;">D+, D</td>
+        <td style="padding: 12px;">Poor SEO — significant problems</td>
+      </tr>
+      <tr>
+        <td style="padding: 12px;">Below 60</td>
+        <td style="padding: 12px;">F</td>
+        <td style="padding: 12px;">Critical issues affecting rankings</td>
+      </tr>
+    </table>
+
+    <h3>What Are Issues?</h3>
+    <p style="color: var(--text-muted); margin-bottom: 16px;">
+      Issues are SEO problems that hurt your rankings. They're labeled by severity:
+    </p>
+
+    <div style="background: var(--surface2); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+      <p style="margin-bottom: 12px;"><strong style="color: var(--red);">🔴 Critical</strong> — High impact. Fix immediately. (e.g., Missing H1 tag)</p>
+      <p style="margin-bottom: 12px;"><strong style="color: var(--yellow);">🟡 Warning</strong> — Medium impact. Fix soon. (e.g., Slow page speed)</p>
+      <p style="margin: 0;"><strong style="color: #94a3b8;">⚪ Info</strong> — Low impact. Nice to have. (e.g., Missing Open Graph tags)</p>
+    </div>
+
+    <h3>How Do I Fix These Issues?</h3>
+    <p style="color: var(--text-muted); margin-bottom: 16px;">
+      Each issue comes with a suggestion. For example:
+    </p>
+
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+      <p style="margin-bottom: 8px;"><strong>Issue:</strong> Missing H1 tag</p>
+      <p style="margin-bottom: 8px;"><strong>Why it matters:</strong> Google uses H1 to understand your page topic</p>
+      <p style="margin: 0;"><strong>Fix:</strong> Add an H1 tag near the top of your page with your main keyword</p>
+    </div>
+
+    <div class="note">
+      💡 <strong>Not all issues are equal:</strong> Fix the Critical ones first, then Warnings. Info items are bonus optimizations.
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="faq-section">
+    <h2>📈 Dashboard Tour</h2>
+
+    <h3>What Can I Do In My Dashboard?</h3>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Your dashboard is your SEO hub. Here's what you'll find:
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Overview</h3>
+          <p>See your account info, subscription plan, and quick links to tools.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>API Keys</h3>
+          <p>If you're a developer, your API key is here. Keep it secret. (Most users don't need this.)</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Usage</h3>
+          <p>See how many audits you've run today and this month. Know your limits before they reset.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3>Subscription</h3>
+          <p>View your current plan and upgrade if you need more audits or features.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANS -->
+  <section id="plans" class="faq-section">
+    <h2>💳 Plans & Upgrade</h2>
+
+    <h3>Free Plan</h3>
+    <p style="color: var(--text-muted); margin-bottom: 12px;">
+      <strong>✓ 100 audits per day</strong> (resets at midnight) — Forever free, no credit card required.
+    </p>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Best for: Testing, small sites, or personal projects.
+    </p>
+
+    <h3>Pro Plan — $49/month</h3>
+    <p style="color: var(--text-muted); margin-bottom: 12px;">
+      <strong>✓ 1,000 audits per day + crawl entire websites + track local SEO rankings</strong>
+    </p>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Best for: Agencies, consultants, and businesses with multiple sites.
+    </p>
+
+    <h3>Agency Plan — $199/month</h3>
+    <p style="color: var(--text-muted); margin-bottom: 12px;">
+      <strong>✓ Unlimited audits + white-label (show your own branding) + priority support</strong>
+    </p>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Best for: Large agencies, platforms, and enterprise users.
+    </p>
+
+    <h3>How to Upgrade</h3>
+    <ol style="color: var(--text-muted); margin-bottom: 20px;">
+      <li>Go to your <a href="dashboard.html">Dashboard</a></li>
+      <li>Click the Subscription tab</li>
+      <li>Choose your plan and click "Upgrade"</li>
+      <li>Enter your payment info (we use Stripe, which is secure)</li>
+      <li>Done! Your limits update instantly</li>
+    </ol>
+
+    <div class="note">
+      ❓ <strong>Can I cancel anytime?</strong> Yes. Just go to your subscription settings and cancel. No questions asked.
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="faq-section">
+    <h2>❓ Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        What exactly does Naraseo analyze?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>We check:</p>
+        <ul style="margin: 12px 0 0 20px;">
+          <li><strong>On-page SEO:</strong> Title, meta description, H1 tags, headings, content quality</li>
+          <li><strong>Technical SEO:</strong> Mobile friendliness, page speed, structured data, canonical tags</li>
+          <li><strong>Core Web Vitals:</strong> Loading speed (LCP), interactivity (FID), visual stability (CLS)</li>
+          <li><strong>Keywords:</strong> What you're ranking for, what you're missing</li>
+          <li><strong>Backlinks:</strong> Domain authority (compared to competitors)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        How long does an audit take?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Usually 5-10 seconds per page. If your site is slow, it might take up to 30 seconds. This is normal.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        Can I audit my competitors?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes! You can audit any public website. This is a great way to see what they're doing better and find gaps in your own SEO strategy.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        What if I exceed my daily limit?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Your limit resets at midnight (UTC). If you need more audits before then, upgrade to Pro or Agency. You'll get instant access to higher limits.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        Are my results saved?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes. Your audit history is saved in your dashboard. You can compare audits over time to track your progress.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        Can I export reports?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes. Every audit can be exported as a professional PDF report. Great for sharing with your team or clients.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        Is my data private?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Yes. Your audit data is private. We don't sell your data or share it with third parties. See our Privacy Policy for details.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        How do I cancel my subscription?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Go to your Dashboard → Subscription → Click "Cancel Plan". You'll have access until your billing period ends.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        Do I need technical knowledge to use this?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>No. Naraseo is built for everyone — from beginners to SEO pros. Our reports explain issues in plain English with actionable fixes.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        What if my site isn't accessible online yet?
+        <span class="faq-toggle">▼</span>
+      </div>
+      <div class="faq-answer">
+        <p>Naraseo needs to reach your site publicly. If your site is behind a firewall or password-protected, we can't analyze it. Launch it to the internet first.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2>Ready to improve your SEO?</h2>
+    <p>Start with a free audit. No credit card required.</p>
+    <a href="login.html" class="btn btn-primary">Create Free Account</a>
+    &nbsp;&nbsp;
+    <a href="index.html#extension" class="btn btn-outline">Install Extension</a>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  ℹ️ Can't find what you're looking for? <a href="skills.html">Learn HTML/CSS</a> • <a href="docs.html">API Docs</a> • <a href="mailto:support@naraseo.ai">Contact support</a>
+</footer>
+
+<script>
+  function toggleFaq(element) {
+    const answer = element.nextElementSibling;
+    const toggle = element.querySelector('.faq-toggle');
+
+    answer.classList.toggle('open');
+    toggle.classList.toggle('open');
+  }
+
+  function scrollToSection(id) {
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { auditPage } from '../../lib/seoEngine.js';
+import seoEngine from '../../lib/seoEngine.js';
 import { validatePageSchemas } from '../../lib/schemaValidator.js';
 import { featureAccess, sendApiResponse, sendApiError } from '../../middleware/apiKey.js';
 import { getPageSpeedInsights, cwvToScore } from '../../lib/pageSpeed.js';
@@ -15,17 +16,19 @@ import crypto from 'crypto';
 const router = express.Router();
 
 // POST /api/v1/audit - Full page audit
+// Accepts: { url } OR { url, html } (html bypasses fetch — for local/pre-deploy testing)
 router.post('/', featureAccess('audit'), async (req, res) => {
-  const { url } = req.body;
+  const { url, html: rawHtml } = req.body;
   const requestId = `req_${crypto.randomBytes(6).toString('hex')}`;
 
   if (!url) {
     return sendApiError(res, 'MISSING_URL', 'URL parameter required', 400, {
       example: { url: 'https://example.com' },
+      tip: 'Pass html parameter to audit local or pre-deploy pages without fetching via HTTPS',
     });
   }
 
-  // Validate URL
+  // Validate URL format (still required as the canonical label for the audit)
   try {
     new URL(url);
   } catch (e) {
@@ -35,11 +38,35 @@ router.post('/', featureAccess('audit'), async (req, res) => {
   try {
     const startTime = Date.now();
 
-    // Run SEO audit + PageSpeed in parallel
-    const [auditResult, ps] = await Promise.all([
-      auditPage(url),
-      getPageSpeedInsights(url),
-    ]);
+    let auditResult, ps;
+
+    if (rawHtml) {
+      // Enforce size limit (5MB max) to prevent abuse
+      if (rawHtml.length > 5_000_000) {
+        return sendApiError(res, 'HTML_TOO_LARGE', 'html parameter must be under 5MB', 400);
+      }
+      // Direct HTML mode — parse provided HTML, skip fetch and PageSpeed (needs public URL)
+      const pageData = seoEngine.parseHTML(rawHtml);
+      const { score, issues } = seoEngine.calculateScore(pageData);
+      auditResult = {
+        success: true,
+        data: {
+          url,
+          score,
+          grade: score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F',
+          pageData,
+          issues,
+          analyzedAt: new Date().toISOString(),
+        },
+      };
+      ps = null; // PageSpeed requires a public HTTPS URL — skip in HTML mode
+    } else {
+      // URL fetch mode — normal flow
+      [auditResult, ps] = await Promise.all([
+        auditPage(url),
+        getPageSpeedInsights(url),
+      ]);
+    }
 
     if (!auditResult.success) {
       return sendApiError(res, 'AUDIT_FAILED', `Failed to audit page: ${auditResult.error}`, 500);

@@ -145,7 +145,7 @@ async function fetchURL(urlString) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlString);
     const isHttps = url.protocol === 'https:';
-    const httpModule = isHttps ? https : https; // Force HTTPS
+    const httpModule = isHttps ? https : http;
 
     const options = {
       hostname: url.hostname,

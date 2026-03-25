@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation — Naraseo AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f52d6;
+      --primary-dim: rgba(99,102,241,0.15);
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #263248;
+      --border: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --radius: 10px;
+      --sidebar-w: 260px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { color: var(--primary-hover); }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      display: flex;
+      margin-top: 60px;
+      min-height: calc(100vh - 60px);
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 0;
+      position: fixed;
+      left: 0;
+      top: 60px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      margin-bottom: 24px;
+      padding: 0 16px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      padding: 0 8px;
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .sidebar-link:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .sidebar-link.active {
+      background: var(--primary-dim);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 48px 64px;
+      max-width: 1200px;
+    }
+
+    .doc-section {
+      display: none;
+    }
+
+    .doc-section.active { display: block; }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 40px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    .code-block {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.15s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -14px;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active { display: block; }
+
+    ul, ol {
+      margin: 14px 0 14px 20px;
+      color: var(--text-muted);
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--surface2);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .note {
+      background: var(--primary-dim);
+      border-left: 3px solid var(--primary);
+      padding: 14px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    .endpoint {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .method-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-right: 10px;
+    }
+
+    .method-post { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+    .method-get { background: rgba(34, 197, 94, 0.2); color: var(--green); }
+
+    @media (max-width: 1200px) {
+      .main { padding: 32px; }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 16px; }
+      .container { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+      .main { margin-left: 0; padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" style="display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700;">
+    <img src="logo.png" alt="Naraseo AI" style="height: 32px; width: auto;" />
+  </a>
+  <a href="index.html" class="nav-back">← Back to home</a>
+</nav>
+
+<div class="container">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Getting Started</div>
+      <div class="sidebar-link active" onclick="showSection('intro')">Introduction</div>
+      <div class="sidebar-link" onclick="showSection('quick-start')">Quick Start</div>
+      <div class="sidebar-link" onclick="showSection('auth')">Authentication</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Endpoints</div>
+      <div class="sidebar-link" onclick="showSection('audit')">SEO Audit</div>
+      <div class="sidebar-link" onclick="showSection('keywords')">Keyword Research</div>
+      <div class="sidebar-link" onclick="showSection('schema')">Schema Validation</div>
+      <div class="sidebar-link" onclick="showSection('competitors')">Competitors</div>
+      <div class="sidebar-link" onclick="showSection('crawl')">Site Crawl</div>
+      <div class="sidebar-link" onclick="showSection('geo')">Geo-Grid</div>
+      <div class="sidebar-link" onclick="showSection('report')">PDF Report</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Advanced</div>
+      <div class="sidebar-link" onclick="showSection('mcp')">MCP Server</div>
+      <div class="sidebar-link" onclick="showSection('errors')">Error Handling</div>
+      <div class="sidebar-link" onclick="showSection('limits')">Rate Limits</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- INTRO -->
+    <section id="intro" class="doc-section active">
+      <h1>Naraseo AI Documentation</h1>
+      <p style="font-size: 16px; margin-bottom: 32px;">
+        Complete API reference for real SEO intelligence. Get started in minutes with code examples in Python, JavaScript, Node.js, and cURL.
+      </p>
+
+      <h2>What is Naraseo AI?</h2>
+      <p>
+        Naraseo AI provides real SEO analysis via REST API. No third-party tools — we handle all the heavy lifting.
+      </p>
+
+      <h3>Three Ways to Access</h3>
+      <ul>
+        <li><strong>REST API</strong> — JSON HTTP endpoints for any platform</li>
+        <li><strong>Chrome Extension</strong> — One-click audits on any webpage</li>
+        <li><strong>MCP Server</strong> — Claude/Cursor integration for AI agents</li>
+      </ul>
+
+      <h2>Platform Features</h2>
+      <table>
+        <tr>
+          <th>Feature</th>
+          <th>Description</th>
+          <th>Free</th>
+          <th>Pro</th>
+          <th>Agency</th>
+        </tr>
+        <tr>
+          <td><strong>SEO Audit</strong></td>
+          <td>Full on-page + Core Web Vitals</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>Keywords</strong></td>
+          <td>Real Google Suggest + analysis</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>Site Crawl</strong></td>
+          <td>Multi-page audit via sitemap</td>
+          <td>—</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>Geo-Grid</strong></td>
+          <td>Local rank tracking</td>
+          <td>—</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- QUICK START -->
+    <section id="quick-start" class="doc-section">
+      <h1>Quick Start</h1>
+      <p>Get your first audit in 5 minutes</p>
+
+      <h2>1. Get API Key</h2>
+      <ol>
+        <li><a href="login.html">Create account</a> (free)</li>
+        <li>Go to Dashboard → API Keys</li>
+        <li>Copy your JWT token</li>
+      </ol>
+
+      <h2>2. Make Your First Request</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'curl')">cURL</button>
+        <button class="tab-btn" onclick="switchTab(event, 'python')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event, 'javascript')">JavaScript</button>
+        <button class="tab-btn" onclick="switchTab(event, 'nodejs')">Node.js</button>
+      </div>
+
+      <div id="curl" class="tab-content active">
+        <div class="code-block">curl -X POST http://localhost:3001/api/v1/audit \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}'</div>
+      </div>
+
+      <div id="python" class="tab-content">
+        <div class="code-block">import requests
+
+response = requests.post(
+  'http://localhost:3001/api/v1/audit',
+  headers={
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  json={'url': 'https://example.com'}
+)
+
+data = response.json()
+print(f"Score: {data['data']['score']}")
+print(f"Grade: {data['data']['grade']}")</div>
+      </div>
+
+      <div id="javascript" class="tab-content">
+        <div class="code-block">fetch('http://localhost:3001/api/v1/audit', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ url: 'https://example.com' })
+})
+.then(r => r.json())
+.then(data => {
+  console.log('Score:', data.data.score);
+  console.log('Grade:', data.data.grade);
+});</div>
+      </div>
+
+      <div id="nodejs" class="tab-content">
+        <div class="code-block">const axios = require('axios');
+
+const response = await axios.post(
+  'http://localhost:3001/api/v1/audit',
+  { url: 'https://example.com' },
+  {
+    headers: {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+console.log('Score:', response.data.data.score);
+console.log('Grade:', response.data.data.grade);</div>
+      </div>
+
+      <h2>3. Parse Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "score": 87,
+    "grade": "B+",
+    "issues": [
+      {
+        "title": "Missing H1 tag",
+        "type": "critical",
+        "impact": "High - affects ranking"
+      }
+    ],
+    "pageData": {...},
+    "keywords": {...},
+    "coreWebVitals": {...}
+  }
+}</div>
+    </section>
+
+    <!-- AUTH -->
+    <section id="auth" class="doc-section">
+      <h1>Authentication</h1>
+      <p>All API requests require a Bearer token (JWT)</p>
+
+      <h2>Getting Your Token</h2>
+      <ol>
+        <li><a href="login.html">Sign up</a> for free</li>
+        <li>Open <a href="dashboard.html">Dashboard</a></li>
+        <li>Go to "API Keys" section</li>
+        <li>Copy your token</li>
+      </ol>
+
+      <h2>Using Your Token</h2>
+      <p>Add to every request header:</p>
+      <div class="code-block">Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+
+      <h2>Subscription Tiers</h2>
+      <table>
+        <tr>
+          <th>Tier</th>
+          <th>Daily Limit</th>
+          <th>Rate Limit</th>
+          <th>Features</th>
+        </tr>
+        <tr>
+          <td><strong>Free</strong></td>
+          <td>100 req/day</td>
+          <td>10 req/min</td>
+          <td>Audit, keywords, schema, competitors</td>
+        </tr>
+        <tr>
+          <td><strong>Pro</strong></td>
+          <td>1,000 req/day</td>
+          <td>60 req/min</td>
+          <td>Free + crawl, geo-grid</td>
+        </tr>
+        <tr>
+          <td><strong>Agency</strong></td>
+          <td>Unlimited</td>
+          <td>200 req/min</td>
+          <td>Pro + white-label, WordPress apply</td>
+        </tr>
+      </table>
+
+      <div class="note">
+        <strong>⚠️ Security:</strong> Keep your token secret. Don't commit it to Git. Use environment variables.
+      </div>
+    </section>
+
+    <!-- AUDIT ENDPOINT -->
+    <section id="audit" class="doc-section">
+      <h1>SEO Audit</h1>
+      <p>Full on-page analysis with score, issues, and Core Web Vitals</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/audit</code>
+        </div>
+        <p>Run a complete SEO audit on any URL</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com",           // required
+  "brandName": "My Company"               // optional, Agency only
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "score": 87,                          // 0-100
+    "grade": "B+",                        // A+ to F
+    "pageData": {
+      "title": "Page title",
+      "metaDescription": "Description",
+      "h1": "Main heading",
+      "wordCount": 1200,
+      "images": 5,
+      "hasViewport": true,
+      "links": { "internal": 12, "external": 3 }
+    },
+    "issues": [
+      {
+        "title": "Missing H1",
+        "type": "critical",               // critical | warning | info
+        "impact": "Affects ranking signals",
+        "suggestion": "Add <h1>...</h1> at top of page"
+      }
+    ],
+    "coreWebVitals": {
+      "lcp": 2.1,                        // Largest Contentful Paint (seconds)
+      "fid": 45,                         // First Input Delay (ms)
+      "cls": 0.05                        // Cumulative Layout Shift
+    },
+    "keywords": [...],
+    "timestamp": "2026-03-25T10:30:00Z"
+  }
+}</div>
+
+      <h2>Code Examples</h2>
+
+      <h3>Python</h3>
+      <div class="code-block">import requests
+import json
+
+def audit_page(url, api_key):
+    response = requests.post(
+      'http://localhost:3001/api/v1/audit',
+      headers={'Authorization': f'Bearer {api_key}'},
+      json={'url': url}
+    )
+    return response.json()
+
+result = audit_page('https://example.com', 'YOUR_API_KEY')
+data = result['data']
+
+print(f"URL: {data['url']}")
+print(f"Score: {data['score']}/100")
+print(f"Grade: {data['grade']}")
+print(f"\nIssues ({len(data['issues'])}):")
+for issue in data['issues']:
+    print(f"  [{issue['type'].upper()}] {issue['title']}")
+    print(f"    → {issue['suggestion']}")
+
+print(f"\nCore Web Vitals:")
+print(f"  LCP: {data['coreWebVitals']['lcp']}s")
+print(f"  FID: {data['coreWebVitals']['fid']}ms")
+print(f"  CLS: {data['coreWebVitals']['cls']}")</div>
+
+      <h3>JavaScript</h3>
+      <div class="code-block">async function auditPage(url, apiKey) {
+  const response = await fetch('http://localhost:3001/api/v1/audit', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ url })
+  });
+
+  const result = await response.json();
+  const data = result.data;
+
+  console.log(`URL: ${data.url}`);
+  console.log(`Score: ${data.score}/100`);
+  console.log(`Grade: ${data.grade}`);
+
+  console.log(`\nIssues (${data.issues.length}):`);
+  data.issues.forEach(issue => {
+    console.log(`  [${issue.type.toUpperCase()}] ${issue.title}`);
+    console.log(`    → ${issue.suggestion}`);
+  });
+
+  console.log('\nCore Web Vitals:');
+  console.log(`  LCP: ${data.coreWebVitals.lcp}s`);
+  console.log(`  FID: ${data.coreWebVitals.fid}ms`);
+  console.log(`  CLS: ${data.coreWebVitals.cls}`);
+}
+
+auditPage('https://example.com', 'YOUR_API_KEY');</div>
+
+      <h3>Node.js with Express</h3>
+      <div class="code-block">const express = require('express');
+const axios = require('axios');
+
+const app = express();
+const API_KEY = process.env.NARASEO_API_KEY;
+
+app.post('/api/audit', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    const response = await axios.post(
+      'http://localhost:3001/api/v1/audit',
+      { url },
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const data = response.data.data;
+
+    res.json({
+      success: true,
+      score: data.score,
+      grade: data.grade,
+      issues: data.issues.filter(i => i.type === 'critical'),
+      cwv: data.coreWebVitals
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(3000, () => console.log('Running on port 3000'));</div>
+    </section>
+
+    <!-- KEYWORDS -->
+    <section id="keywords" class="doc-section">
+      <h1>Keyword Research</h1>
+      <p>Real Google Suggest data + AI analysis for keyword opportunities</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/keywords</code>
+        </div>
+        <p>Extract and analyze keywords from a page</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com"           // required
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "extractedKeywords": [
+      { "keyword": "seo", "count": 45, "density": "3.2%" }
+    ],
+    "realSuggestions": {
+      "seo": ["seo tools", "seo tips", "seo services", ...]
+    },
+    "aiAnalysis": {
+      "primaryKeyword": "seo",
+      "searchIntent": "informational",
+      "semanticCluster": ["seo optimization", "search engine optimization"],
+      "contentGaps": ["seo audit", "seo checklist"],
+      "quickWins": [
+        {
+          "keyword": "seo audit",
+          "action": "Add H2 section about 'SEO Audit'",
+          "difficulty": "low"
+        }
+      ],
+      "titleSuggestion": "SEO Optimization Tips & Strategies 2026",
+      "metaSuggestion": "Learn professional SEO techniques..."
+    }
+  }
+}</div>
+
+      <h2>Python Example</h2>
+      <div class="code-block">import requests
+
+def analyze_keywords(url, api_key):
+    response = requests.post(
+      'http://localhost:3001/api/v1/keywords',
+      headers={'Authorization': f'Bearer {api_key}'},
+      json={'url': url}
+    )
+    return response.json()['data']
+
+keywords = analyze_keywords('https://example.com', 'YOUR_API_KEY')
+
+print(f"Primary Keyword: {keywords['aiAnalysis']['primaryKeyword']}")
+print(f"Search Intent: {keywords['aiAnalysis']['searchIntent']}")
+print(f"\nQuick Wins:")
+for win in keywords['aiAnalysis']['quickWins']:
+    print(f"  • {win['keyword']} - {win['action']}")
+
+print(f"\nContent Gaps: {', '.join(keywords['aiAnalysis']['contentGaps'])}")</div>
+    </section>
+
+    <!-- SCHEMA -->
+    <section id="schema" class="doc-section">
+      <h1>Schema Validation</h1>
+      <p>Validate and generate JSON-LD structured data</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/schema/validate</code>
+        </div>
+        <p>Validate all JSON-LD schemas on a page</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com"           // required
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "schemas": [
+      {
+        "type": "Article",
+        "valid": true,
+        "fields": {
+          "headline": "Article Title",
+          "datePublished": "2026-01-01",
+          "author": "John Doe"
+        }
+      }
+    ],
+    "issues": [
+      {
+        "type": "Product",
+        "error": "Missing required field: 'priceCurrency'"
+      }
+    ]
+  }
+}</div>
+    </section>
+
+    <!-- COMPETITORS -->
+    <section id="competitors" class="doc-section">
+      <h1>Competitor Analysis</h1>
+      <p>Compare yourself against competitors with real domain authority</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/competitors</code>
+        </div>
+        <p>Gap analysis with real backlink data</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com",
+  "competitors": [
+    "https://competitor1.com",
+    "https://competitor2.com"
+  ]
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "yourScore": 87,
+    "competitors": [
+      {
+        "url": "https://competitor1.com",
+        "score": 92,
+        "domainAuthority": 8.5,
+        "gaps": ["Better keyword targeting", "Stronger backlinks"],
+        "actions": ["Add more internal links", "Improve page speed"]
+      }
+    ]
+  }
+}</div>
+    </section>
+
+    <!-- CRAWL -->
+    <section id="crawl" class="doc-section">
+      <h1>Site Crawl</h1>
+      <p>Multi-page audit via sitemap discovery (Pro+)</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/crawl</code>
+        </div>
+        <p>Crawl entire website and audit all pages</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com",
+  "maxPages": 50                         // optional, default 50
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "pagesFound": 47,
+    "pagesCrawled": 47,
+    "averageScore": 78,
+    "pages": [
+      {
+        "url": "https://example.com/page1",
+        "score": 85,
+        "issues": 3
+      }
+    ]
+  }
+}</div>
+    </section>
+
+    <!-- GEO-GRID -->
+    <section id="geo" class="doc-section">
+      <h1>Geo-Grid Local Ranking</h1>
+      <p>Track local search rankings across geographic areas (Pro+)</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/geo-grid</code>
+        </div>
+        <p>Get local rank across a geographic grid</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com",
+  "keyword": "pizza delivery",
+  "center": {
+    "lat": 40.7128,
+    "lng": -74.0060
+  },
+  "gridSize": 5                          // 3x3, 5x5, 7x7
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "keyword": "pizza delivery",
+    "averageRank": 3.2,
+    "coverage": 87,                      // % of grid where you rank
+    "points": [
+      {
+        "lat": 40.7128,
+        "lng": -74.0060,
+        "rank": 1
+      }
+    ]
+  }
+}</div>
+    </section>
+
+    <!-- REPORT -->
+    <section id="report" class="doc-section">
+      <h1>PDF Report Generation</h1>
+      <p>Generate professional PDF audit reports</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom: 12px;">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-family: monospace;">/api/v1/report</code>
+        </div>
+        <p>Get a professional PDF report for any URL</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://example.com",
+  "brandName": "My Company"              // optional, Agency only
+}</div>
+
+      <h2>Response</h2>
+      <p>Returns a PDF binary file with audit results, metrics, and recommendations</p>
+
+      <h2>JavaScript Example</h2>
+      <div class="code-block">async function downloadReport(url, apiKey) {
+  const response = await fetch('http://localhost:3001/api/v1/report', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ url })
+  });
+
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = `seo-report-${new Date().getTime()}.pdf`;
+  a.click();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
+downloadReport('https://example.com', 'YOUR_API_KEY');</div>
+    </section>
+
+    <!-- MCP SERVER -->
+    <section id="mcp" class="doc-section">
+      <h1>MCP Server Integration</h1>
+      <p>Give Claude, Cursor, and Windsurf native SEO tools</p>
+
+      <h2>What is MCP?</h2>
+      <p>
+        Model Context Protocol allows AI agents to call tools directly. Instead of making HTTP requests, Claude can use SEO tools natively.
+      </p>
+
+      <h2>Setup for Claude Desktop</h2>
+      <ol>
+        <li>Open <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
+        <li>Add this configuration:</li>
+      </ol>
+
+      <div class="code-block">{
+  "mcpServers": {
+    "naraseo-ai": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:3001/mcp/sse"]
+    }
+  }
+}</div>
+
+      <ol start="3">
+        <li>Restart Claude Desktop</li>
+        <li>Ask Claude: "What are the SEO issues on example.com?"</li>
+      </ol>
+
+      <h2>Available MCP Tools</h2>
+      <ul>
+        <li><strong>seo_audit</strong> — Full audit with score and issues</li>
+        <li><strong>solve</strong> — Autonomous audit + keywords + fixes</li>
+        <li><strong>keyword_research</strong> — Keyword analysis and gaps</li>
+        <li><strong>schema_validate</strong> — JSON-LD validation</li>
+        <li><strong>site_crawl</strong> — Multi-page crawl</li>
+        <li><strong>geo_grid</strong> — Local rank tracking</li>
+        <li><strong>competitor_analysis</strong> — Gap analysis with DA</li>
+      </ul>
+    </section>
+
+    <!-- ERRORS -->
+    <section id="errors" class="doc-section">
+      <h1>Error Handling</h1>
+      <p>Handle API errors gracefully</p>
+
+      <h2>HTTP Status Codes</h2>
+      <table>
+        <tr>
+          <th>Code</th>
+          <th>Meaning</th>
+          <th>Solution</th>
+        </tr>
+        <tr>
+          <td><strong>200</strong></td>
+          <td>Success</td>
+          <td>Parse the response</td>
+        </tr>
+        <tr>
+          <td><strong>400</strong></td>
+          <td>Bad Request</td>
+          <td>Check URL format and required fields</td>
+        </tr>
+        <tr>
+          <td><strong>401</strong></td>
+          <td>Unauthorized</td>
+          <td>Verify API key is correct and included in header</td>
+        </tr>
+        <tr>
+          <td><strong>403</strong></td>
+          <td>Forbidden</td>
+          <td>Feature not available on your plan</td>
+        </tr>
+        <tr>
+          <td><strong>429</strong></td>
+          <td>Rate Limited</td>
+          <td>Wait before next request or upgrade plan</td>
+        </tr>
+        <tr>
+          <td><strong>502</strong></td>
+          <td>Bad Gateway</td>
+          <td>URL unreachable or returns invalid HTML</td>
+        </tr>
+        <tr>
+          <td><strong>500</strong></td>
+          <td>Server Error</td>
+          <td>Try again in a moment, contact support</td>
+        </tr>
+      </table>
+
+      <h2>Error Response Format</h2>
+      <div class="code-block">{
+  "success": false,
+  "error": {
+    "code": "FEATURE_UNAVAILABLE",
+    "message": "Feature 'crawl' not available on Free tier",
+    "requiredTier": "Pro"
+  }
+}</div>
+
+      <h2>Python Error Handling</h2>
+      <div class="code-block">import requests
+
+try:
+  response = requests.post(
+    'http://localhost:3001/api/v1/audit',
+    headers={'Authorization': f'Bearer {api_key}'},
+    json={'url': url},
+    timeout=30
+  )
+  response.raise_for_status()
+  data = response.json()
+
+  if not data.get('success'):
+    error = data.get('error', {})
+    print(f"API Error: {error.get('code')} - {error.get('message')}")
+    return
+
+  print(f"Score: {data['data']['score']}")
+
+except requests.exceptions.Timeout:
+  print("Request timeout - try again")
+except requests.exceptions.ConnectionError:
+  print("Cannot connect to API server")
+except requests.exceptions.HTTPError as e:
+  if e.response.status_code == 429:
+    print("Rate limited - upgrade plan")
+  elif e.response.status_code == 401:
+    print("Invalid API key")
+  else:
+    print(f"HTTP Error {e.response.status_code}")</div>
+    </section>
+
+    <!-- RATE LIMITS -->
+    <section id="limits" class="doc-section">
+      <h1>Rate Limits & Quotas</h1>
+      <p>Fair usage limits to ensure platform stability</p>
+
+      <h2>Per-Tier Limits</h2>
+      <table>
+        <tr>
+          <th>Plan</th>
+          <th>Per Minute</th>
+          <th>Per Day</th>
+        </tr>
+        <tr>
+          <td><strong>Free</strong></td>
+          <td>10 requests</td>
+          <td>100 requests</td>
+        </tr>
+        <tr>
+          <td><strong>Pro</strong></td>
+          <td>60 requests</td>
+          <td>1,000 requests</td>
+        </tr>
+        <tr>
+          <td><strong>Agency</strong></td>
+          <td>200 requests</td>
+          <td>Unlimited</td>
+        </tr>
+      </table>
+
+      <h2>Response Headers</h2>
+      <p>Every response includes rate limit info:</p>
+      <div class="code-block">X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 7
+X-RateLimit-Reset: 1234567890</div>
+
+      <h2>What Counts Toward Limits</h2>
+      <ul>
+        <li>Each API call = 1 request (regardless of what endpoint)</li>
+        <li>Site crawl with 50 pages = 50 requests</li>
+        <li>Geo-grid with 9 points = 9 requests</li>
+      </ul>
+
+      <h2>Handling Rate Limits (Python)</h2>
+      <div class="code-block">import requests
+import time
+
+def audit_with_retry(url, api_key, max_retries=3):
+  for attempt in range(max_retries):
+    response = requests.post(
+      'http://localhost:3001/api/v1/audit',
+      headers={'Authorization': f'Bearer {api_key}'},
+      json={'url': url}
+    )
+
+    if response.status_code == 429:
+      # Rate limited - wait and retry
+      wait_time = int(response.headers.get('X-RateLimit-Reset', time.time() + 60)) - int(time.time())
+      print(f"Rate limited. Waiting {wait_time}s...")
+      time.sleep(max(1, wait_time))
+      continue
+
+    return response.json()
+
+  raise Exception("Max retries exceeded")
+
+result = audit_with_retry('https://example.com', 'YOUR_API_KEY')</div>
+
+      <div class="note">
+        <strong>Need higher limits?</strong> <a href="dashboard.html">Upgrade your plan</a> or contact support for custom limits.
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<script>
+  function showSection(id) {
+    document.querySelectorAll('.doc-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function switchTab(e, tabId) {
+    const parent = e.target.parentElement;
+    parent.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    parent.parentElement.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+    e.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+  }
+</script>
+
+</body>
+</html>
