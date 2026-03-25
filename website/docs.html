@@ -406,7 +406,7 @@
       </div>
 
       <div id="curl" class="tab-content active">
-        <div class="code-block">curl -X POST http://localhost:3001/api/v1/audit \
+        <div class="code-block">curl -X POST https://naraseoai.onrender.com/api/v1/audit \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com"}'</div>
@@ -416,7 +416,7 @@
         <div class="code-block">import requests
 
 response = requests.post(
-  'http://localhost:3001/api/v1/audit',
+  'https://naraseoai.onrender.com/api/v1/audit',
   headers={
     'Authorization': 'Bearer YOUR_API_KEY',
     'Content-Type': 'application/json'
@@ -430,7 +430,7 @@ print(f"Grade: {data['data']['grade']}")</div>
       </div>
 
       <div id="javascript" class="tab-content">
-        <div class="code-block">fetch('http://localhost:3001/api/v1/audit', {
+        <div class="code-block">fetch('https://naraseoai.onrender.com/api/v1/audit', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
@@ -449,7 +449,7 @@ print(f"Grade: {data['data']['grade']}")</div>
         <div class="code-block">const axios = require('axios');
 
 const response = await axios.post(
-  'http://localhost:3001/api/v1/audit',
+  'https://naraseoai.onrender.com/api/v1/audit',
   { url: 'https://example.com' },
   {
     headers: {
@@ -594,7 +594,7 @@ import json
 
 def audit_page(url, api_key):
     response = requests.post(
-      'http://localhost:3001/api/v1/audit',
+      'https://naraseoai.onrender.com/api/v1/audit',
       headers={'Authorization': f'Bearer {api_key}'},
       json={'url': url}
     )
@@ -618,7 +618,7 @@ print(f"  CLS: {data['coreWebVitals']['cls']}")</div>
 
       <h3>JavaScript</h3>
       <div class="code-block">async function auditPage(url, apiKey) {
-  const response = await fetch('http://localhost:3001/api/v1/audit', {
+  const response = await fetch('https://naraseoai.onrender.com/api/v1/audit', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -660,7 +660,7 @@ app.post('/api/audit', async (req, res) => {
     const { url } = req.body;
 
     const response = await axios.post(
-      'http://localhost:3001/api/v1/audit',
+      'https://naraseoai.onrender.com/api/v1/audit',
       { url },
       {
         headers: {
@@ -738,7 +738,7 @@ app.listen(3000, () => console.log('Running on port 3000'));</div>
 
 def analyze_keywords(url, api_key):
     response = requests.post(
-      'http://localhost:3001/api/v1/keywords',
+      'https://naraseoai.onrender.com/api/v1/keywords',
       headers={'Authorization': f'Bearer {api_key}'},
       json={'url': url}
     )
@@ -941,7 +941,7 @@ print(f"\nContent Gaps: {', '.join(keywords['aiAnalysis']['contentGaps'])}")</di
 
       <h2>JavaScript Example</h2>
       <div class="code-block">async function downloadReport(url, apiKey) {
-  const response = await fetch('http://localhost:3001/api/v1/report', {
+  const response = await fetch('https://naraseoai.onrender.com/api/v1/report', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -982,7 +982,7 @@ downloadReport('https://example.com', 'YOUR_API_KEY');</div>
   "mcpServers": {
     "naraseo-ai": {
       "command": "npx",
-      "args": ["mcp-remote", "http://localhost:3001/mcp/sse"]
+      "args": ["mcp-remote", "https://naraseoai.onrender.com/mcp/sse"]
     }
   }
 }</div>
@@ -1068,7 +1068,7 @@ downloadReport('https://example.com', 'YOUR_API_KEY');</div>
 
 try:
   response = requests.post(
-    'http://localhost:3001/api/v1/audit',
+    'https://naraseoai.onrender.com/api/v1/audit',
     headers={'Authorization': f'Bearer {api_key}'},
     json={'url': url},
     timeout=30
@@ -1145,7 +1145,7 @@ import time
 def audit_with_retry(url, api_key, max_retries=3):
   for attempt in range(max_retries):
     response = requests.post(
-      'http://localhost:3001/api/v1/audit',
+      'https://naraseoai.onrender.com/api/v1/audit',
       headers={'Authorization': f'Bearer {api_key}'},
       json={'url': url}
     )

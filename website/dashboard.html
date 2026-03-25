@@ -725,7 +725,7 @@
           <span style="padding-left:16px;"><span class="t-flag">-H </span><span class="t-str">"Authorization: Bearer <span class="t-redact" id="qsToken">YOUR_API_KEY</span>"</span> \</span><br/>
           <span style="padding-left:16px;"><span class="t-flag">-H </span><span class="t-str">"Content-Type: application/json"</span> \</span><br/>
           <span style="padding-left:16px;"><span class="t-flag">-d </span><span class="t-str">'{"url":"https://example.com"}'</span> \</span><br/>
-          <span style="padding-left:16px;color:#94a3b8;">http://localhost:3001/api/v1/audit</span>
+          <span style="padding-left:16px;color:#94a3b8;">https://naraseoai.onrender.com/api/v1/audit</span>
         </div>
       </div>
 
@@ -770,13 +770,13 @@
         <span style="padding-left:16px;"><span class="t-flag">-H </span><span class="t-str">"Authorization: Bearer <span class="t-redact api-key-placeholder">YOUR_API_KEY</span>"</span> \</span><br/>
         <span style="padding-left:16px;"><span class="t-flag">-H </span><span class="t-str">"Content-Type: application/json"</span> \</span><br/>
         <span style="padding-left:16px;"><span class="t-flag">-d </span><span class="t-str">'{"url":"https://example.com","keyword":"seo tools"}'</span> \</span><br/>
-        <span style="padding-left:16px;color:#94a3b8;">http://localhost:3001/api/v1/audit</span><br/><br/>
+        <span style="padding-left:16px;color:#94a3b8;">https://naraseoai.onrender.com/api/v1/audit</span><br/><br/>
         <span class="t-comment"># Get competitor analysis</span><br/>
         <span class="t-prompt">$</span> <span style="color:#94a3b8;">curl -s -X POST \</span><br/>
         <span style="padding-left:16px;"><span class="t-flag">-H </span><span class="t-str">"Authorization: Bearer <span class="t-redact api-key-placeholder">YOUR_API_KEY</span>"</span> \</span><br/>
         <span style="padding-left:16px;"><span class="t-flag">-H </span><span class="t-str">"Content-Type: application/json"</span> \</span><br/>
         <span style="padding-left:16px;"><span class="t-flag">-d </span><span class="t-str">'{"url":"https://example.com","competitors":["competitor.com"]}'</span> \</span><br/>
-        <span style="padding-left:16px;color:#94a3b8;">http://localhost:3001/api/v1/competitors</span>
+        <span style="padding-left:16px;color:#94a3b8;">https://naraseoai.onrender.com/api/v1/competitors</span>
       </div>
     </div>
 
@@ -888,9 +888,9 @@
       <div class="page-sub">Quick reference for the most commonly used endpoints.</div>
 
       <div class="note-box" style="margin-bottom:24px;">
-        Base URL: <code style="font-family:monospace;">http://localhost:3001</code> &nbsp;&mdash;&nbsp;
+        Base URL: <code style="font-family:monospace;">https://naraseoai.onrender.com</code> &nbsp;&mdash;&nbsp;
         Auth: <code style="font-family:monospace;">Authorization: Bearer {your_token}</code> &nbsp;&mdash;&nbsp;
-        <a href="http://localhost:3001/api/v1/openapi.json" target="_blank" style="color:#a5b4fc; font-weight:600;">
+        <a href="https://naraseoai.onrender.com/api/v1/openapi.json" target="_blank" style="color:#a5b4fc; font-weight:600;">
           OpenAPI spec &rarr;
         </a>
       </div>
@@ -995,10 +995,10 @@
         <div class="card-title">OpenAPI Specification</div>
         <div class="card-sub" style="margin-bottom:14px;">Full machine-readable spec. Import into Postman, Insomnia, or any OpenAPI client.</div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <a href="http://localhost:3001/api/v1/openapi.json" target="_blank" class="btn btn-primary btn-sm">
+          <a href="https://naraseoai.onrender.com/api/v1/openapi.json" target="_blank" class="btn btn-primary btn-sm">
             View OpenAPI JSON
           </a>
-          <a href="http://localhost:3001/mcp" target="_blank" class="btn btn-outline btn-sm">
+          <a href="https://naraseoai.onrender.com/mcp" target="_blank" class="btn btn-outline btn-sm">
             View MCP Guide
           </a>
         </div>
@@ -1009,7 +1009,7 @@
 </div>
 
 <script>
-  const API_BASE = 'http://localhost:3001';
+  const API_BASE = 'https://naraseoai.onrender.com';
 
   let currentUser = null;
   let token = null;
@@ -1203,7 +1203,7 @@
   -H "Authorization: Bearer ${token}" \\
   -H "Content-Type: application/json" \\
   -d '{"url":"https://example.com"}' \\
-  http://localhost:3001/api/v1/audit`;
+  https://naraseoai.onrender.com/api/v1/audit`;
     copyText(text, btn);
   }
 
