@@ -1807,11 +1807,24 @@ async function runAudit() {
       result._pageData       = pageData;
     }
 
+    // Merge keyword data
+    if (kwData?.keywords) {
+      result.keywords    = kwData.keywords;
+      result._kwData     = kwData;
+      currentKeywords    = kwData.keywords;
+    }
+
     // Merge off-page data (domain authority, backlinks)
     if (offPageData && offPageData.status !== 'unavailable') {
       result.backlinks = offPageData;
-      result._offPage  = offPageData; // for sidebar off-page pillar score
+      result._offPage  = offPageData;
     }
+
+    // Merge any cached geo-grid result for this domain
+    try {
+      const { geoGridResult } = await chrome.storage.local.get('geoGridResult');
+      if (geoGridResult) result.geoGrid = geoGridResult;
+    } catch {}
 
     activateStep(4); // Step 4: Generating fixes
     currentAudit = result;
@@ -3040,7 +3053,7 @@ function rptKeywordsSection(d) {
 
     ${(kw._realSearches || []).length ? `
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#374151;margin:0 0 6px;display:flex;align-items:center;gap:6px;">
-      Real Google Searches
+      Search Intelligence
       <span style="background:#dbeafe;color:#1e40af;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;text-transform:none;">Live data</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;">
@@ -3167,29 +3180,38 @@ async function downloadReport() {
     const html = buildReportHtml(reportJson, userPlan);
     const hostname = reportJson.meta?.hostname || 'report';
     const dateSlug = new Date().toISOString().split('T')[0];
-    const filename = `naraseo-${hostname}-${dateSlug}.pdf`;
+    const filename = `naraseo_seo_report.pdf`;
 
-    // Send HTML to backend Puppeteer — returns real PDF binary, auto-downloads
-    const resp = await fetch('https://naraseoai.onrender.com/api/v1/report/render', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ html, filename }),
-    });
+    // Get html2pdf library source from extension bundle
+    const html2pdfUrl = chrome.runtime.getURL('lib/html2pdf.bundle.min.js');
+    const html2pdfResp = await fetch(html2pdfUrl);
+    const html2pdfSrc = await html2pdfResp.text();
 
-    if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+    // Inject html2pdf + auto-save script into report HTML — opens in new tab, auto-downloads
+    const autoSaveScript = `
+<script>
+${html2pdfSrc}
+window.addEventListener('load', function() {
+  var opt = {
+    margin: [8, 8, 8, 8],
+    filename: '${filename}',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(document.body).save().then(function() {
+    setTimeout(function() { window.close(); }, 1000);
+  });
+});
+</script>`;
+    const fullHtml = html.replace('</body>', autoSaveScript + '</body>');
 
-    const blob = await resp.blob();
-    const dataUrl = await new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.readAsDataURL(blob);
-    });
-
-    await chrome.downloads.download({ url: dataUrl, filename });
+    // Open in new tab — html2pdf runs there and auto-downloads the PDF
+    await chrome.tabs.create({ url: 'data:text/html;charset=utf-8,' + encodeURIComponent(fullHtml) });
 
   } catch (err) {
     console.error('[Report] Failed:', err);
-    // Fallback: open in new tab if backend unavailable
+    // Final fallback: open with print dialog
     try {
       const { userPlan = 'free' } = await chrome.storage.local.get('userPlan');
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -3905,6 +3927,10 @@ async function runGeoGrid(e) {
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Server error');
+
+    // Save geo result so it can be included in report
+    chrome.storage.local.set({ geoGridResult: data });
+    if (currentAudit) { currentAudit.geoGrid = data; chrome.storage.local.set({ currentAudit }); }
 
     document.getElementById('geo-loading').style.display = 'none';
     renderGeoHeatmap(data);

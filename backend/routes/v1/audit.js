@@ -127,6 +127,9 @@ router.post('/', featureAccess('audit'), async (req, res) => {
       onPageScore: categoryScores.onPage,
       techScore: categoryScores.technical,
       contentScore: categoryScores.content,
+      keywords: [], // Will be populated by keywords endpoint
+      geoGrid: null, // Will be populated by geo-grid endpoint
+      _localSEO: {}, // Will be populated by local-seo endpoint
       issues: allIssues.map(issue => ({
         id: issue.id,
         type: issue.type,
