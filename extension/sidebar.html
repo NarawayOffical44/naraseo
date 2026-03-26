@@ -87,7 +87,7 @@
           <span class="logo-name">Naraseo AI</span>
         </div>
         <div class="topbar-url" id="sidebar-url">Loading...</div>
-        <span id="credits-chip" class="credits-chip" onclick="switchView('account')" title="Monthly audit limit">5/5</span>
+        <span id="credits-chip" class="credits-chip" title="Monthly audit limit">5/5</span>
         <button class="topbar-report-btn" id="btn-download" style="display:none;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Report
@@ -143,19 +143,19 @@
                 
                 <span>Full Audit</span>
               </button>
-              <button class="qa-pill" id="qa-chat" onclick="switchView('chat')">
+              <button class="qa-pill" id="qa-chat">
                 
                 <span>AI Chat</span>
               </button>
-              <button class="qa-pill" id="qa-speed" onclick="switchView('home'); document.getElementById('btn-audit-main').click()">
+              <button class="qa-pill" id="qa-speed">
                 
                 <span>Page Speed</span>
               </button>
-              <button class="qa-pill" id="qa-fixes" onclick="switchView('fixes')">
+              <button class="qa-pill" id="qa-fixes">
                 
                 <span>Quick Fixes</span>
               </button>
-              <button class="qa-pill qa-pill-wide" id="qa-crawl" onclick="runSiteCrawl()">
+              <button class="qa-pill qa-pill-wide" id="qa-crawl">
                 
                 <span>Crawl Site</span>
                 <span class="qa-pill-badge">NEW</span>
@@ -170,7 +170,7 @@
             </button>
 
             <!-- View Last Audit (shown only if cached) -->
-            <button id="btn-view-last-audit" class="btn-view-last" style="display:none;" onclick="showResults()">
+            <button id="btn-view-last-audit" class="btn-view-last" style="display:none;">
               View Last Audit Results →
             </button>
 
@@ -217,7 +217,7 @@
               <div class="score-domain" id="score-domain">Analyzing...</div>
               <div class="score-usage-bar" id="score-usage-bar">
                 <span class="score-usage-text" id="usage-text">3 of 5 audits used</span>
-                <button class="score-usage-upgrade" onclick="switchView('account')">Upgrade ↗</button>
+                <button class="score-usage-upgrade" id="btn-upgrade-link">Upgrade ↗</button>
               </div>
             </div>
 
@@ -256,7 +256,7 @@
               <button id="btn-apply-fixes" class="btn-action agent" title="Inject missing meta tags, OG tags & schema directly into the live page">
                 <span> Apply Quick Fixes</span>
               </button>
-              <button id="btn-crawl-site" class="btn-action secondary" onclick="runSiteCrawl()" title="Crawl multiple pages — no Puppeteer, fully native">
+              <button id="btn-crawl-site" class="btn-action secondary" title="Crawl multiple pages — no Puppeteer, fully native">
                 <span> Crawl Site</span>
               </button>
             </div>
@@ -322,7 +322,7 @@
             <div class="breakdown-section" id="keywords-section" style="display:none;">
               <div class="breakdown-header keywords-header">
                 <span>Keyword Research</span>
-                <button class="kw-run-btn" id="btn-run-keywords" onclick="runKeywordResearch()">Analyse →</button>
+                <button class="kw-run-btn" id="btn-run-keywords">Analyse →</button>
               </div>
               <div class="keywords-body" id="keywords-body">
                 <div class="kw-placeholder">
@@ -407,7 +407,7 @@
         <div id="view-chat" class="panel-view chat-view-panel">
           <div class="chat-header-bar">
             <span class="chat-header-title">AI Chat</span>
-            <button class="chat-clear-btn" onclick="clearChatHistory()" title="Clear chat history">Clear</button>
+            <button class="chat-clear-btn" id="btn-clear-chat" title="Clear chat history">Clear</button>
           </div>
           <div class="chat-messages" id="sidebar-chat-messages">
             <div class="chat-message ai">
@@ -420,8 +420,8 @@
         <div id="view-fixes" class="panel-view">
           <!-- Sub-tabs inside Fixes view -->
           <div class="fixes-subtabs">
-            <button class="fixes-subtab active" id="subtab-fixes" onclick="showFixesSubtab('fixes')">Code Fixes</button>
-            <button class="fixes-subtab" id="subtab-suggestions" onclick="showFixesSubtab('suggestions')">AI Rewrites</button>
+            <button class="fixes-subtab active" id="subtab-fixes">Code Fixes</button>
+            <button class="fixes-subtab" id="subtab-suggestions">AI Rewrites</button>
           </div>
 
           <div id="fixes-panel">
@@ -457,7 +457,7 @@
               <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Your password" required /></div>
               <div class="auth-error" id="login-error"></div>
               <button type="submit" class="btn-auth-submit" id="btn-login-submit">Sign In</button>
-              <button type="button" class="btn-forgot" onclick="handleForgotPassword()">Forgot password?</button>
+              <button type="button" class="btn-forgot" id="btn-forgot-password">Forgot password?</button>
             </form>
             <form id="signup-form" class="auth-form" style="display:none;">
               <div class="form-group"><label>Full Name</label><input type="text" id="signup-name" placeholder="Your name" required /></div>
@@ -465,7 +465,7 @@
               <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 8 characters" minlength="8" required /></div>
               <div class="auth-error" id="signup-error"></div>
               <button type="submit" class="btn-auth-submit" id="btn-signup-submit">Create Account</button>
-              <p class="auth-terms">By signing up you agree to our <a href="#" onclick="openPrivacyPolicy()">Privacy Policy</a>.</p>
+              <p class="auth-terms">By signing up you agree to our <a href="#" id="link-privacy-policy">Privacy Policy</a>.</p>
             </form>
             <div class="auth-plans-preview">
               <div class="plans-preview-title">What you unlock:</div>
@@ -521,7 +521,7 @@
                     <div class="plan-feature">Local &amp; GEO analysis</div>
                     <div class="plan-feature">Core Web Vitals tracking</div>
                   </div>
-                  <button class="btn-upgrade-plan" id="btn-upgrade-pro" onclick="openCheckout('pro')">Get Pro — $149/mo</button>
+                  <button class="btn-upgrade-plan" id="btn-upgrade-pro">Get Pro — $149/mo</button>
                   <div class="plan-savings">Saves $2,850+/mo vs an agency</div>
                   <div class="plan-current-badge" id="pro-current-badge" style="display:none;">Current Plan</div>
                 </div>
@@ -538,7 +538,7 @@
                     <div class="plan-feature">Priority support</div>
                     <div class="plan-feature">API access</div>
                   </div>
-                  <button class="btn-upgrade-plan btn-upgrade-agency" id="btn-upgrade-agency" onclick="openCheckout('agency')">Get Agency — $299/mo</button>
+                  <button class="btn-upgrade-plan btn-upgrade-agency" id="btn-upgrade-agency">Get Agency — $299/mo</button>
                   <div class="plan-savings">1 client retainer pays for 10 months</div>
                   <div class="plan-current-badge" id="agency-current-badge" style="display:none;">Current Plan</div>
                 </div>
@@ -565,9 +565,9 @@
 
             <div class="settings-section">
               <div class="settings-title">Settings</div>
-              <button class="settings-row" id="btn-refresh-plan" onclick="refreshPlanStatus()"><span class="settings-label">Refresh Plan</span><span class="settings-arrow">›</span></button>
-              <button class="settings-row" id="btn-privacy-policy" onclick="openPrivacyPolicy()"><span class="settings-label">Privacy Policy</span><span class="settings-arrow">›</span></button>
-              <button class="settings-row settings-row-danger" id="btn-logout" onclick="handleLogout()"><span class="settings-label">Sign Out</span><span class="settings-arrow">›</span></button>
+              <button class="settings-row" id="btn-refresh-plan"><span class="settings-label">Refresh Plan</span><span class="settings-arrow">›</span></button>
+              <button class="settings-row" id="btn-privacy-policy"><span class="settings-label">Privacy Policy</span><span class="settings-arrow">›</span></button>
+              <button class="settings-row settings-row-danger" id="btn-logout"><span class="settings-label">Sign Out</span><span class="settings-arrow">›</span></button>
             </div>
             <div class="account-version">Naraseo AI v1.0.0</div>
           </div>
@@ -577,7 +577,7 @@
         <div id="view-schedulers" class="panel-view">
           <div class="schedulers-header">
             <span class="schedulers-title">Scheduled Tasks</span>
-            <button class="schedulers-refresh-btn" onclick="loadSchedulersView()" title="Refresh">
+            <button class="schedulers-refresh-btn" id="btn-refresh-schedulers" title="Refresh">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
           </div>
@@ -624,9 +624,9 @@
             </button>
           </div>
           <div class="bottom-chips">
-            <button class="bottom-chip" onclick="quickChat('Analyse on-page SEO')">On-Page</button>
-            <button class="bottom-chip" onclick="quickChat('Check technical performance')">Technical</button>
-            <button class="bottom-chip" onclick="quickChat('What are the top 3 fixes?')">Top Fixes</button>
+            <button class="bottom-chip" id="chip-onpage">On-Page</button>
+            <button class="bottom-chip" id="chip-technical">Technical</button>
+            <button class="bottom-chip" id="chip-topfixes">Top Fixes</button>
           </div>
         </div>
 
@@ -638,7 +638,7 @@
             <span id="history-badge" class="history-badge" style="display:none;">0</span>
           </button>
           <div class="footer-spacer"></div>
-          <button class="footer-icon-btn" onclick="switchView('account')" title="Account">
+          <button class="footer-icon-btn" id="btn-footer-account" title="Account">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
           </button>
         </div>

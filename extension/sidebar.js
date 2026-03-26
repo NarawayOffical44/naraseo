@@ -339,6 +339,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
+// ─── BUTTON EVENT LISTENERS (replaces inline onclick to comply with MV3 CSP) ──
+document.addEventListener('DOMContentLoaded', () => {
+  const on = (id, fn) => document.getElementById(id)?.addEventListener('click', fn);
+  on('credits-chip',          () => switchView('account'));
+  on('qa-chat',               () => switchView('chat'));
+  on('qa-speed',              () => { switchView('home'); document.getElementById('btn-audit-main')?.click(); });
+  on('qa-fixes',              () => switchView('fixes'));
+  on('qa-crawl',              () => runSiteCrawl());
+  on('btn-view-last-audit',   () => showResults());
+  on('btn-upgrade-link',      () => switchView('account'));
+  on('btn-crawl-site',        () => runSiteCrawl());
+  on('btn-run-keywords',      () => runKeywordResearch());
+  on('btn-clear-chat',        () => clearChatHistory());
+  on('subtab-fixes',          () => showFixesSubtab('fixes'));
+  on('subtab-suggestions',    () => showFixesSubtab('suggestions'));
+  on('btn-forgot-password',   () => handleForgotPassword());
+  on('link-privacy-policy',   (e) => { e.preventDefault(); openPrivacyPolicy(); });
+  on('btn-upgrade-pro',       () => openCheckout('pro'));
+  on('btn-upgrade-agency',    () => openCheckout('agency'));
+  on('btn-refresh-plan',      () => refreshPlanStatus());
+  on('btn-privacy-policy',    () => openPrivacyPolicy());
+  on('btn-logout',            () => handleLogout());
+  on('btn-refresh-schedulers',() => loadSchedulersView());
+  on('chip-onpage',           () => quickChat('Analyse on-page SEO'));
+  on('chip-technical',        () => quickChat('Check technical performance'));
+  on('chip-topfixes',         () => quickChat('What are the top 3 fixes?'));
+  on('btn-footer-account',    () => switchView('account'));
+});
+
 //  VIEW SWITCHING (right-nav icon bar)
 function switchView(name) {
   ['home','chat','fixes','account','schedulers'].forEach(v => {

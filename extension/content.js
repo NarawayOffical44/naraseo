@@ -3,6 +3,12 @@
  * Highlights SEO issues directly on the page with animated red/yellow/green boxes
  */
 
+// Guard against double-injection (content scripts can run more than once)
+if (window.__naraseoCS) {
+  // Already loaded — skip re-execution to avoid duplicate declarations
+} else {
+window.__naraseoCS = true;
+
 // Inject CSS animations for pulsing overlays
 injectStyles();
 
@@ -112,7 +118,7 @@ function injectStyles() {
       text-overflow: ellipsis !important;
     }
   `;
-  document.head.appendChild(style);
+  (document.head || document.documentElement).appendChild(style);
 }
 
 /**
@@ -480,7 +486,7 @@ function applySuggestion(element, value) {
         if (!meta) {
           meta = document.createElement('meta');
           meta.name = 'description';
-          document.head.appendChild(meta);
+          (document.head || document.documentElement).appendChild(meta);
         }
         meta.content = value;
         // Also update og:description
@@ -560,7 +566,7 @@ function injectSuggestionStyles() {
       background: rgba(99, 102, 241, 0.05) !important;
     }
   `;
-  document.head.appendChild(style);
+  (document.head || document.documentElement).appendChild(style);
 }
 
 // Maps element keys to a DOM selector function
@@ -623,7 +629,7 @@ function applyAutoFixes(issues) {
       const meta = document.createElement('meta');
       meta.name = 'viewport';
       meta.content = 'width=device-width, initial-scale=1';
-      document.head.appendChild(meta);
+      (document.head || document.documentElement).appendChild(meta);
       fixed.push({
         issue: 'Missing viewport',
         code: '<meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -636,7 +642,7 @@ function applyAutoFixes(issues) {
       const link = document.createElement('link');
       link.rel = 'canonical';
       link.href = window.location.href;
-      document.head.appendChild(link);
+      (document.head || document.documentElement).appendChild(link);
       fixed.push({
         issue: 'Missing canonical',
         code: `<link rel="canonical" href="${window.location.href}">`,
@@ -653,28 +659,28 @@ function applyAutoFixes(issues) {
         const m = document.createElement('meta');
         m.setAttribute('property', 'og:title');
         m.content = title;
-        document.head.appendChild(m);
+        (document.head || document.documentElement).appendChild(m);
         fixed.push({ issue: 'Missing og:title', code: `<meta property="og:title" content="${escapeAttr(title)}">`, applied: true });
       }
       if (!document.querySelector('meta[property="og:description"]') && desc) {
         const m = document.createElement('meta');
         m.setAttribute('property', 'og:description');
         m.content = desc;
-        document.head.appendChild(m);
+        (document.head || document.documentElement).appendChild(m);
         fixed.push({ issue: 'Missing og:description', code: `<meta property="og:description" content="${escapeAttr(desc)}">`, applied: true });
       }
       if (!document.querySelector('meta[property="og:url"]')) {
         const m = document.createElement('meta');
         m.setAttribute('property', 'og:url');
         m.content = window.location.href;
-        document.head.appendChild(m);
+        (document.head || document.documentElement).appendChild(m);
         fixed.push({ issue: 'Missing og:url', code: `<meta property="og:url" content="${window.location.href}">`, applied: true });
       }
       if (!document.querySelector('meta[property="og:type"]')) {
         const m = document.createElement('meta');
         m.setAttribute('property', 'og:type');
         m.content = 'website';
-        document.head.appendChild(m);
+        (document.head || document.documentElement).appendChild(m);
         fixed.push({ issue: 'Missing og:type', code: '<meta property="og:type" content="website">', applied: true });
       }
     }
@@ -684,7 +690,7 @@ function applyAutoFixes(issues) {
       const m = document.createElement('meta');
       m.name = 'twitter:card';
       m.content = 'summary_large_image';
-      document.head.appendChild(m);
+      (document.head || document.documentElement).appendChild(m);
       fixed.push({ issue: 'Missing twitter:card', code: '<meta name="twitter:card" content="summary_large_image">', applied: true });
     }
 
@@ -701,7 +707,7 @@ function applyAutoFixes(issues) {
       const script = document.createElement('script');
       script.type = 'application/ld+json';
       script.textContent = JSON.stringify(schema, null, 2);
-      document.head.appendChild(script);
+      (document.head || document.documentElement).appendChild(script);
       fixed.push({
         issue: 'Missing LocalBusiness schema',
         code: `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`,
@@ -970,3 +976,4 @@ function analyzeLocalSEO() {
 }
 
 console.log('✓ SEO AI visual audit loaded');
+} // end double-injection guard
