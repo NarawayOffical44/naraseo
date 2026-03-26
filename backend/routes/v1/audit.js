@@ -7,7 +7,7 @@ import express from 'express';
 import { auditPage } from '../../lib/seoEngine.js';
 import seoEngine from '../../lib/seoEngine.js';
 import { validatePageSchemas } from '../../lib/schemaValidator.js';
-import { featureAccess, sendApiResponse, sendApiError } from '../../middleware/apiKey.js';
+import { featureAccess, creditCheck, sendApiResponse, sendApiError } from '../../middleware/apiKey.js';
 import { getPageSpeedInsights, cwvToScore } from '../../lib/pageSpeed.js';
 import { saveAudit, getAudit, getAuditHistory } from '../../lib/history.js';
 import supabase from '../../supabase.js';
@@ -17,7 +17,7 @@ const router = express.Router();
 
 // POST /api/v1/audit - Full page audit
 // Accepts: { url } OR { url, html } (html bypasses fetch — for local/pre-deploy testing)
-router.post('/', featureAccess('audit'), async (req, res) => {
+router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (req, res) => {
   const { url, html: rawHtml } = req.body;
   const requestId = `req_${crypto.randomBytes(6).toString('hex')}`;
 
@@ -222,6 +222,9 @@ router.post('/', featureAccess('audit'), async (req, res) => {
     };
 
     const processingMs = Date.now() - startTime;
+
+    // Deduct credit on success (fire-and-forget)
+    if (req.deductCredit) req.deductCredit().catch(() => {});
 
     // Persist to Supabase (fire-and-forget — never blocks response)
     saveAudit(supabase, {

@@ -694,38 +694,171 @@ app.get('/demo-checkout', (req, res) => {
   res.send(html);
 });
 
+// ─── SUBSCRIPTION / BILLING ──────────────────────────────────────────────────
+import { PLAN_CREDITS } from './middleware/apiKey.js';
+
+const PLAN_PRICES = {
+  pro:    { monthly: 4900,  label: 'Pro',    credits: PLAN_CREDITS.pro },    // in paise/cents
+  agency: { monthly: 19900, label: 'Agency', credits: PLAN_CREDITS.agency },
+};
+
 /**
- * POST /api/billing/webhook — Stripe webhook updates plan
- * DEMO MODE: Updates in-memory user
- * PRODUCTION: Updates Supabase
+ * GET /api/subscription/status — current plan + credits for logged-in user
  */
-app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig   = req.headers['stripe-signature'];
-  const event = JSON.parse(req.body.toString());
+app.get('/api/subscription/status', authMiddleware, async (req, res) => {
+  try {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, credits, reset_month, plan_expires_at')
+      .eq('id', req.userId)
+      .single();
+    if (!profile) return res.status(404).json({ error: 'User not found' });
+
+    const plan = profile.plan || 'free';
+    const monthlyLimit = PLAN_CREDITS[plan] ?? PLAN_CREDITS.free;
+    let credits = profile.credits ?? monthlyLimit;
+
+    // Auto-reset on new month
+    if (profile.reset_month !== currentMonth) {
+      credits = monthlyLimit;
+      await supabase.from('profiles')
+        .update({ credits: monthlyLimit, reset_month: currentMonth })
+        .eq('id', req.userId);
+    }
+
+    res.json({
+      plan,
+      credits,
+      creditsLimit: monthlyLimit,
+      creditsUsed: monthlyLimit - credits,
+      planExpiresAt: profile.plan_expires_at || null,
+      isExpired: profile.plan_expires_at ? new Date(profile.plan_expires_at) < new Date() : false,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/subscription/create-order — Razorpay: create payment order
+ * Body: { plan: 'pro'|'agency' }
+ */
+app.post('/api/subscription/create-order', authMiddleware, async (req, res) => {
+  const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+    return res.status(503).json({ error: 'Payment gateway not configured' });
+  }
+
+  const { plan } = req.body;
+  if (!PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan' });
 
   try {
-    // Handle checkout.session.completed
-    if (event?.type === 'checkout.session.completed') {
-      const session  = event.data.object;
-      const userId   = session.metadata?.userId;
-      const planName = session.metadata?.plan || 'pro';
+    const amount = PLAN_PRICES[plan].monthly;
+    const body = JSON.stringify({
+      amount,
+      currency: 'INR',
+      receipt: `rcpt_${req.userId}_${Date.now()}`,
+      notes: { userId: req.userId, plan },
+    });
 
-      if (DEMO_MODE) {
-        // DEMO MODE: Update in-memory user
-        const user = demoUsers.get(userId);
-        if (user) {
-          user.plan = planName;
-          console.log(`✅ [DEMO] Plan updated to ${planName} for user ${userId}`);
-        }
-      } else {
-        // PRODUCTION: Update Supabase
-        await supabase.from('profiles').update({ plan: planName }).eq('id', userId);
-        console.log(`✅ Plan updated to ${planName} for user ${userId}`);
+    const auth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
+    const rpRes = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+      body,
+    });
+    const order = await rpRes.json();
+    if (order.error) return res.status(400).json({ error: order.error.description });
+
+    res.json({ orderId: order.id, amount, currency: 'INR', keyId: RAZORPAY_KEY_ID, plan });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/webhooks/razorpay — verify payment and upgrade plan
+ */
+app.post('/api/webhooks/razorpay', express.json(), async (req, res) => {
+  const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
+  try {
+    // Verify signature
+    if (RAZORPAY_WEBHOOK_SECRET) {
+      const sig = req.headers['x-razorpay-signature'];
+      const expected = crypto.createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
+        .update(JSON.stringify(req.body)).digest('hex');
+      if (sig !== expected) return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    const event = req.body;
+    if (event.event === 'payment.captured') {
+      const payment = event.payload.payment.entity;
+      const userId = payment.notes?.userId;
+      const plan = payment.notes?.plan || 'pro';
+
+      if (userId && supabase) {
+        const monthlyLimit = PLAN_CREDITS[plan] ?? PLAN_CREDITS.free;
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+        await supabase.from('profiles').update({
+          plan,
+          credits: monthlyLimit,
+          reset_month: new Date().toISOString().slice(0, 7),
+          plan_expires_at: expiresAt.toISOString(),
+        }).eq('id', userId);
+
+        console.log(`✅ [Razorpay] Plan upgraded to ${plan} for user ${userId}`);
       }
     }
     res.json({ received: true });
   } catch (err) {
-    console.error('Webhook error:', err);
+    console.error('[Razorpay webhook]', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/billing/webhook — Stripe webhook (improved)
+ */
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const event = JSON.parse(req.body.toString());
+
+    const upgradeUser = async (userId, plan) => {
+      if (!userId || !supabase) return;
+      const monthlyLimit = PLAN_CREDITS[plan] ?? PLAN_CREDITS.free;
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+      await supabase.from('profiles').update({
+        plan,
+        credits: monthlyLimit,
+        reset_month: new Date().toISOString().slice(0, 7),
+        plan_expires_at: expiresAt.toISOString(),
+      }).eq('id', userId);
+      console.log(`✅ [Stripe] Plan upgraded to ${plan} for user ${userId}`);
+    };
+
+    if (event?.type === 'checkout.session.completed') {
+      const s = event.data.object;
+      await upgradeUser(s.metadata?.userId, s.metadata?.plan || 'pro');
+    } else if (event?.type === 'invoice.paid') {
+      const inv = event.data.object;
+      await upgradeUser(inv.metadata?.userId || inv.subscription_details?.metadata?.userId, inv.metadata?.plan || 'pro');
+    } else if (event?.type === 'customer.subscription.deleted') {
+      const sub = event.data.object;
+      const userId = sub.metadata?.userId;
+      if (userId && supabase) {
+        await supabase.from('profiles').update({ plan: 'free', credits: PLAN_CREDITS.free, plan_expires_at: null }).eq('id', userId);
+        console.log(`⬇️ [Stripe] Downgraded to free for user ${userId}`);
+      }
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[Stripe webhook]', err.message);
     res.status(400).json({ error: err.message });
   }
 });

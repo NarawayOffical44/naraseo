@@ -1,5 +1,5 @@
 /**
- * API Key Middleware - Authentication and rate limiting
+ * API Key Middleware - Authentication, rate limiting, and credits
  * Supports JWT (existing users) and API key auth (public API)
  */
 
@@ -7,6 +7,26 @@ import crypto from 'crypto';
 
 // In-memory rate limiter (stores requests per key)
 const rateLimiter = new Map(); // apiKey -> { requests: [], daily: { requests: [], date } }
+
+// Credits deducted per successful action
+export const CREDIT_COSTS = {
+  audit: 1,
+  keywords: 1,
+  competitors: 2,
+  crawl: 5,
+  geoGrid: 2,
+  chat: 1,
+  localSeo: 1,
+  schema: 0,
+  fixes: 1,
+};
+
+// Monthly credits per plan (resets each month)
+export const PLAN_CREDITS = {
+  free: 10,
+  pro: 1000,
+  agency: 999999,
+};
 
 // Tier configurations
 const TIERS = {
@@ -280,14 +300,82 @@ export function sendApiError(res, code, message, statusCode = 400, details = {})
   });
 }
 
+/**
+ * Credit check middleware — attaches req.deductCredit() to call after success.
+ * Checks monthly credits from Supabase; resets on new month.
+ * If limit exceeded → 429 with CREDITS_EXCEEDED code.
+ */
+export function creditCheck(feature, supabase) {
+  return async (req, res, next) => {
+    const cost = CREDIT_COSTS[feature] ?? 1;
+    if (cost === 0) return next(); // free actions skip check
+
+    // No supabase or no user — skip credit check (demo/anonymous)
+    if (!supabase || !req.user?.id) return next();
+
+    try {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('credits, reset_month, plan')
+        .eq('id', req.user.id)
+        .single();
+
+      if (!profile) return next();
+
+      const plan = profile.plan || 'free';
+      const monthlyLimit = PLAN_CREDITS[plan] ?? PLAN_CREDITS.free;
+
+      // Reset credits on new month
+      let credits = profile.credits ?? monthlyLimit;
+      if (profile.reset_month !== currentMonth) {
+        credits = monthlyLimit;
+        await supabase.from('profiles')
+          .update({ credits: monthlyLimit, reset_month: currentMonth })
+          .eq('id', req.user.id);
+      }
+
+      if (credits < cost) {
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: 'CREDITS_EXCEEDED',
+            message: `You've used all ${monthlyLimit} credits this month on the ${plan} plan.`,
+            creditsUsed: monthlyLimit,
+            creditsLimit: monthlyLimit,
+            plan,
+            upgradeUrl: 'https://naraseo.onrender.com/dashboard.html#upgrade',
+          },
+        });
+      }
+
+      // Attach deduct function — called by route only on success
+      req.deductCredit = async () => {
+        await supabase.from('profiles')
+          .update({ credits: Math.max(0, credits - cost) })
+          .eq('id', req.user.id);
+      };
+
+      next();
+    } catch (e) {
+      // Don't block on credit check errors
+      req.deductCredit = async () => {};
+      next();
+    }
+  };
+}
+
 export default {
   apiKeyAuth,
   rateLimitMiddleware,
   featureAccess,
+  creditCheck,
   whiteLabelHeaders,
   generateApiKey,
   hashApiKey,
   sendApiResponse,
   sendApiError,
   TIERS,
+  CREDIT_COSTS,
+  PLAN_CREDITS,
 };

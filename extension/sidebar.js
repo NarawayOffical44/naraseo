@@ -1817,15 +1817,28 @@ async function runAudit() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: tab.url, pageData }),
       });
+      if (response.status === 429) {
+        const errJson = await response.json();
+        const err = new Error(errJson.error?.code || 'limit exceeded');
+        err.creditCode = errJson.error?.code;
+        throw err;
+      }
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       result = await response.json();
     } else {
       // No DOM data — fallback to backend fetch + Lighthouse (handles SPAs)
+      const authToken = (await chrome.storage.local.get('authToken')).authToken || '';
       const response = await fetch('https://naraseoai.onrender.com/api/v1/audit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify({ url: tab.url }),
       });
+      if (response.status === 429) {
+        const errJson = await response.json();
+        const err = new Error(errJson.error?.code || 'limit exceeded');
+        err.creditCode = errJson.error?.code;
+        throw err;
+      }
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       const json = await response.json();
       result = json.data;
@@ -1894,6 +1907,15 @@ async function runAudit() {
     document.getElementById('audit-loading').style.display = 'none';
     const preAuditEl3 = document.getElementById('pre-audit-state') || document.querySelector('.sider-welcome');
     if (preAuditEl3) preAuditEl3.style.display = 'flex';
+
+    // Handle credits exceeded — show upgrade prompt
+    if (error.message?.includes('CREDITS_EXCEEDED') || error.creditCode === 'CREDITS_EXCEEDED') {
+      showUpgradePrompt('pro');
+      addChatMessage(`**Monthly limit reached.** Upgrade to Pro for 1,000 credits/month.`, 'ai', false);
+      switchView('account');
+      return;
+    }
+
     const msg = error.message.includes('Failed to fetch')
       ? 'Could not reach backend. Start with: npm start in the backend folder.'
       : error.message;
