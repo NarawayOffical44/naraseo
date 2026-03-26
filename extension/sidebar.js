@@ -1791,13 +1791,15 @@ async function runAudit() {
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       result = await response.json();
     } else {
-      // No DOM data — page behind login wall or content script blocked
-      const errorMsg = 'Could not read page content. This can happen if:\n' +
-        '• The page requires login — make sure you\'re logged in\n' +
-        '• The page is still loading — wait and try again\n' +
-        '• The page is restricted (chrome://, file://, PDF, etc.)\n\n' +
-        'Try reloading the page and auditing again.';
-      throw new Error(errorMsg);
+      // No DOM data — fallback to backend fetch + Lighthouse (handles SPAs)
+      const response = await fetch('https://naraseoai.onrender.com/api/v1/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: tab.url }),
+      });
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
+      const json = await response.json();
+      result = json.data;
     }
 
     // Merge pageData fields so SERP preview, report etc. can access title/meta/OG
@@ -1809,6 +1811,13 @@ async function runAudit() {
       result.ogImage         = result.ogImage         || pageData.ogImage         || '';
       result.categories      = result.categories      || pageData.categories      || {};
       result._pageData       = pageData;
+    } else if (result.pageData) {
+      // Backend returned full pageData (when content script failed)
+      result.title           = result.title           || result.pageData.title           || '';
+      result.metaDescription = result.metaDescription || result.pageData.metaDescription || '';
+      result.ogTitle         = result.ogTitle         || result.pageData.og?.og_title    || '';
+      result.ogDescription   = result.ogDescription   || result.pageData.og?.og_description || '';
+      result.ogImage         = result.ogImage         || result.pageData.og?.og_image    || '';
     }
 
     // Merge keyword data
