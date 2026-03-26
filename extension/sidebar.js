@@ -2644,7 +2644,7 @@ async function loadChatHistory() {
 
 function clearChatHistory() {
   chrome.storage.local.remove('chatHistory');
-  sidebarChatMessages.innerHTML = '';
+  sidebarChatMessages.innerHTML = '<div class="chat-message ai"><div class="chat-text">Hi! I\'m your Naraseo AI assistant. Run an audit first, then ask me anything about improving your rankings.</div></div>';
 }
 
 function renderMarkdown(text) {
