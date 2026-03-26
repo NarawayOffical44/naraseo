@@ -2972,29 +2972,6 @@ app.get('/health', (req, res) => {
 });
 
 /**
- * Contact form endpoint — POST /api/contact
- */
-app.post('/api/contact', async (req, res) => {
-  const { name, email, subject, message } = req.body;
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'name, email, and message are required' });
-  }
-  try {
-    if (supabase) {
-      await supabase.from('contact_submissions').insert({
-        name, email, subject: subject || 'General Question', message,
-        created_at: new Date().toISOString(),
-      });
-    }
-    console.log(`[contact] New submission from ${email}: ${subject}`);
-    return res.json({ success: true });
-  } catch (e) {
-    console.error('[contact] Error:', e.message);
-    return res.json({ success: true }); // still return success to user
-  }
-});
-
-/**
  * Self-ping every 4 minutes to prevent Render free tier sleep
  */
 setInterval(() => {
