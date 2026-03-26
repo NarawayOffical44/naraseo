@@ -756,6 +756,49 @@
     </div>
   </section>
 
+  <!-- CONTACT FORM -->
+  <section class="section" id="contact" style="max-width:640px;margin:0 auto 60px;">
+    <h2 class="section-title">Contact Support</h2>
+    <p style="color:var(--text-muted);margin-bottom:28px;">Can't find an answer? Send us a message and we'll get back to you within 24 hours.</p>
+
+    <form id="contact-form" style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <label style="display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;">Name</label>
+          <input type="text" id="cf-name" placeholder="Your name" required
+            style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;">Email</label>
+          <input type="email" id="cf-email" placeholder="you@example.com" required
+            style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;" />
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;">Subject</label>
+        <select id="cf-subject"
+          style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;">
+          <option>Bug Report</option>
+          <option>Feature Request</option>
+          <option>Billing Question</option>
+          <option>Extension Help</option>
+          <option>API / MCP Help</option>
+          <option>General Question</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;">Message</label>
+        <textarea id="cf-message" rows="5" placeholder="Describe your issue or question..." required
+          style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <div id="cf-status" style="font-size:13px;display:none;padding:10px 14px;border-radius:8px;"></div>
+      <button type="submit" id="cf-submit"
+        style="padding:12px 28px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;">
+        Send Message
+      </button>
+    </form>
+  </section>
+
   <!-- CTA -->
   <div class="cta-section">
     <h2>Ready to improve your SEO?</h2>
@@ -769,7 +812,7 @@
 
 <!-- FOOTER -->
 <footer>
-  ℹ️ Can't find what you're looking for? <a href="skills.html">Learn HTML/CSS</a> • <a href="docs.html">API Docs</a> • <a href="mailto:support@naraseo.ai">Contact support</a>
+  ℹ️ Can't find what you're looking for? <a href="docs.html">API Docs</a> • <a href="help.html#contact">Contact Support</a>
 </footer>
 
 <script>
@@ -787,6 +830,44 @@
       section.scrollIntoView({ behavior: 'smooth' });
     }
   }
+
+  document.getElementById('contact-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('cf-submit');
+    const status = document.getElementById('cf-status');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    status.style.display = 'none';
+    try {
+      const res = await fetch('https://naraseoai.onrender.com/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('cf-name').value,
+          email: document.getElementById('cf-email').value,
+          subject: document.getElementById('cf-subject').value,
+          message: document.getElementById('cf-message').value,
+        }),
+      });
+      if (res.ok) {
+        status.style.background = 'rgba(34,197,94,0.15)';
+        status.style.color = '#22c55e';
+        status.style.border = '1px solid rgba(34,197,94,0.3)';
+        status.textContent = '✓ Message sent! We\'ll reply within 24 hours.';
+        document.getElementById('contact-form').reset();
+      } else {
+        throw new Error('Server error');
+      }
+    } catch {
+      status.style.background = 'rgba(239,68,68,0.15)';
+      status.style.color = '#ef4444';
+      status.style.border = '1px solid rgba(239,68,68,0.3)';
+      status.textContent = '✗ Failed to send. Email us at support@naraseo.ai';
+    }
+    status.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Send Message';
+  });
 </script>
 
 </body>
