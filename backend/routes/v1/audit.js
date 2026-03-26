@@ -73,8 +73,8 @@ router.post('/', featureAccess('audit'), async (req, res) => {
     }
 
     const { score, grade, pageData, issues } = auditResult.data;
-    const rawHtml = auditResult.rawHtml;
-    const isSPA = rawHtml ? seoEngine.detectSPA(rawHtml, pageData) : false;
+    const fetchedHtml = auditResult.rawHtml;
+    const isSPA = fetchedHtml ? seoEngine.detectSPA(fetchedHtml, pageData) : false;
 
     // If SPA detected, fallback to Lighthouse-rendered data for missing fields
     if (isSPA && ps?.seoAudits) {
