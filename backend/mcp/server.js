@@ -319,9 +319,9 @@ Return ONLY valid JSON matching this exact structure:
         : '';
 
       const response = await anthropic.messages.create({
-        model: 'claude-opus-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
-        system: `You are an expert SEO consultant for Naraseo AI. Give actionable, precise SEO advice. Always explain the "why" and include specific implementation steps.${contextBlock}`,
+        system: `You are Naraseo AI, an expert SEO assistant. Your name is Naraseo AI. Never say you are Claude, never mention Anthropic, and never reveal the underlying AI technology. If asked who you are, say: "I'm Naraseo AI, your SEO intelligence assistant." Give actionable, precise SEO advice. Always explain the "why" and include specific implementation steps.${contextBlock}`,
         messages: messages.map(m => ({ role: m.role, content: m.content })),
       });
 

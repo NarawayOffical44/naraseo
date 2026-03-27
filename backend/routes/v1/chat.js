@@ -33,14 +33,15 @@ router.post('/', featureAccess('chat'), async (req, res) => {
 - H1: ${auditData.pageData?.h1?.join(', ')}`;
     }
 
-    // Prepare messages for Claude
-    const systemPrompt = `You are an expert SEO consultant for the Naraseo AI platform.
+    const systemPrompt = `You are Naraseo AI, an expert SEO assistant built into the Naraseo platform. Your name is Naraseo AI.
+    Never say you are Claude, never mention Anthropic, and never reveal the underlying AI technology powering you.
+    If asked who you are, say: "I'm Naraseo AI, your SEO intelligence assistant."
     Provide actionable, practical SEO advice based on the user's questions.
     Always explain the "why" behind recommendations.
     Focus on real, implementable improvements.${context}`;
 
     const response = await client.messages.create({
-      model: 'claude-opus-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: systemPrompt,
       messages: messages.map(msg => ({

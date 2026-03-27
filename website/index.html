@@ -35,6 +35,7 @@
       --primary: #6366f1;
       --primary-hover: #4f52d6;
       --primary-dim: rgba(99,102,241,0.15);
+      --primary-glow: rgba(99,102,241,0.25);
       --bg: #0f172a;
       --surface: #1e293b;
       --surface2: #263248;
@@ -43,6 +44,7 @@
       --text-muted: #94a3b8;
       --text-dim: #64748b;
       --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
       --yellow: #eab308;
       --red: #ef4444;
       --radius: 10px;
@@ -59,6 +61,17 @@
     }
 
     a { color: inherit; text-decoration: none; }
+
+    /* ── SCROLL ANIMATIONS ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.delay-1 { transition-delay: 0.1s; }
+    .fade-up.delay-2 { transition-delay: 0.2s; }
+    .fade-up.delay-3 { transition-delay: 0.3s; }
 
     /* ── NAV ── */
     nav {
@@ -109,14 +122,9 @@
       font-weight: 500;
       transition: color 0.15s;
     }
-
     .nav-links a:hover { color: var(--text); }
 
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
 
     /* ── BUTTONS ── */
     .btn {
@@ -130,68 +138,42 @@
       font-weight: 600;
       cursor: pointer;
       border: none;
-      transition: all 0.15s;
+      transition: all 0.18s;
       text-decoration: none;
       white-space: nowrap;
     }
 
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-muted);
-    }
+    .btn-ghost { background: transparent; color: var(--text-muted); }
     .btn-ghost:hover { color: var(--text); background: var(--surface); }
 
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-    }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
 
-    .btn-outline {
-      background: transparent;
-      color: var(--primary);
-      border: 1px solid var(--primary);
-    }
+    .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
     .btn-outline:hover { background: var(--primary-dim); }
 
-    .btn-lg {
-      padding: 12px 28px;
-      font-size: 15px;
-      border-radius: 10px;
-    }
+    .btn-lg { padding: 13px 30px; font-size: 15px; border-radius: 10px; }
 
     /* ── HERO ── */
     .hero {
-      min-height: calc(100vh - 60px);
-      display: flex;
-      align-items: center;
-      padding: 80px 32px 60px;
+      padding: 100px 32px 72px;
+      text-align: center;
       position: relative;
       overflow: hidden;
     }
 
-    .hero::before {
-      content: '';
+    .hero-glow {
       position: absolute;
-      top: -180px;
+      top: -120px;
       left: 50%;
       transform: translateX(-50%);
       width: 900px;
       height: 600px;
-      background: radial-gradient(ellipse, rgba(99,102,241,0.17) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(99,102,241,0.2) 0%, transparent 65%);
       pointer-events: none;
     }
 
-    .hero-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
-      position: relative;
-    }
+    .hero-inner { position: relative; max-width: 800px; margin: 0 auto; }
 
     .hero-badge {
       display: inline-flex;
@@ -201,192 +183,206 @@
       color: #a5b4fc;
       border: 1px solid rgba(99,102,241,0.3);
       border-radius: 20px;
-      padding: 4px 14px;
+      padding: 5px 14px;
       font-size: 12px;
       font-weight: 600;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     .hero h1 {
-      font-size: clamp(30px, 4.2vw, 50px);
+      font-size: clamp(36px, 5.5vw, 64px);
       font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -1px;
-      margin-bottom: 20px;
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      margin-bottom: 22px;
     }
 
     .hero h1 .gradient {
-      background: linear-gradient(135deg, #c7d2fe 0%, #818cf8 40%, #6366f1 100%);
+      background: linear-gradient(135deg, #c7d2fe 0%, #818cf8 45%, #6366f1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .hero-sub {
-      font-size: 17px;
+      font-size: 18px;
       color: var(--text-muted);
       line-height: 1.7;
-      margin-bottom: 32px;
-      max-width: 480px;
+      margin-bottom: 36px;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .hero-ctas {
       display: flex;
       gap: 12px;
+      justify-content: center;
       flex-wrap: wrap;
+      margin-bottom: 64px;
     }
 
-    /* ── TERMINAL ── */
-    .terminal {
-      background: #080f1e;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
-    }
-
-    .terminal-bar {
-      background: var(--surface);
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .t-dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-    }
-
-    .terminal-label {
-      margin-left: 8px;
-      font-size: 12px;
-      color: var(--text-dim);
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    }
-
-    .terminal-body {
-      padding: 22px 24px;
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      font-size: 12.5px;
-      line-height: 1.85;
-    }
-
-    .t-comment { color: #475569; }
-    .t-prompt { color: var(--primary); user-select: none; }
-    .t-cmd { color: #94a3b8; }
-    .t-flag { color: #a5b4fc; }
-    .t-str { color: #86efac; }
-    .t-key { color: #93c5fd; }
-    .t-num { color: #fdba74; }
-    .t-brace { color: #64748b; }
-
-    /* ── DEMO BAR ── */
-    .demo-bar {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 32px;
-    }
-
-    .demo-bar-inner {
-      max-width: 680px;
+    /* ── AUDIT MOCKUP ── */
+    .mockup-wrap {
+      position: relative;
+      max-width: 740px;
       margin: 0 auto;
     }
 
-    .demo-bar-label {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
-      text-align: center;
+    .mockup-glow {
+      position: absolute;
+      inset: -40px;
+      background: radial-gradient(ellipse at 50% 60%, var(--primary-glow) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
-    .demo-row {
+    .audit-mockup {
+      position: relative;
+      z-index: 1;
+      background: #0d1526;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.15);
+      text-align: left;
+    }
+
+    .mockup-topbar {
+      background: var(--surface);
+      padding: 12px 18px;
       display: flex;
+      align-items: center;
       gap: 10px;
-      align-items: stretch;
+      border-bottom: 1px solid var(--border);
     }
 
-    .demo-input {
+    .m-dot { width: 11px; height: 11px; border-radius: 50%; }
+
+    .mockup-url {
+      margin-left: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: 'SF Mono', monospace;
       flex: 1;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 11px 16px;
-      color: var(--text);
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.15s;
-      min-width: 0;
-    }
-    .demo-input::placeholder { color: var(--text-dim); }
-    .demo-input:focus { border-color: var(--primary); }
-
-    .demo-feedback {
-      margin-top: 14px;
-      display: flex;
-      justify-content: center;
+      border-radius: 6px;
+      padding: 4px 10px;
     }
 
-    .score-card {
-      display: inline-flex;
-      align-items: center;
-      gap: 16px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 22px;
-    }
+    .mockup-body { padding: 22px 24px; display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; }
 
-    .score-circle {
-      width: 52px;
-      height: 52px;
+    .score-ring {
+      width: 88px;
+      height: 88px;
       border-radius: 50%;
+      background: conic-gradient(var(--green) 0% 87%, var(--border) 87% 100%);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 22px;
       font-weight: 800;
-      font-size: 17px;
       flex-shrink: 0;
+      position: relative;
     }
-
-    .score-details strong { font-size: 16px; display: block; }
-    .score-details .score-meta { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
-
-    .score-cta { margin-left: 8px; font-size: 12px; color: var(--primary); font-weight: 600; }
-    .score-cta:hover { text-decoration: underline; }
-
-    .demo-msg {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 13px;
+    .score-ring::after {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: #0d1526;
     }
-    .demo-msg.error { color: var(--red); }
-    .demo-msg.loading {
-      color: var(--text-muted);
+    .score-ring span { position: relative; z-index: 1; }
+
+    .mockup-right {}
+
+    .score-meta { margin-bottom: 14px; }
+    .score-grade { font-size: 20px; font-weight: 700; color: var(--green); }
+    .score-label { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+
+    .check-rows { display: flex; flex-direction: column; gap: 7px; }
+
+    .check-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      gap: 9px;
+      font-size: 13px;
+      padding: 7px 12px;
+      border-radius: 7px;
+    }
+    .check-row.good { background: var(--green-dim); color: #86efac; }
+    .check-row.warn { background: rgba(234,179,8,0.1); color: #fde047; }
+    .check-row.bad { background: rgba(239,68,68,0.1); color: #fca5a5; }
+
+    .check-row .cr-icon { font-size: 13px; flex-shrink: 0; width: 16px; }
+
+    .mockup-vitals {
+      border-top: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      gap: 0;
     }
 
-    .spinner {
-      width: 15px;
-      height: 15px;
-      border: 2px solid var(--border);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+    .vital {
+      flex: 1;
+      text-align: center;
+      border-right: 1px solid var(--border);
+      padding: 0 16px;
+    }
+    .vital:first-child { padding-left: 0; }
+    .vital:last-child { border-right: none; padding-right: 0; }
+    .vital-val { font-size: 16px; font-weight: 700; color: var(--green); }
+    .vital-key { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 32px;
+      background: var(--surface);
+    }
+
+    .stats-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+      flex: 1;
+      min-width: 110px;
+    }
+
+    .stat-num {
+      display: block;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .stat-div {
+      width: 1px;
+      height: 40px;
+      background: var(--border);
       flex-shrink: 0;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── SECTIONS ── */
     section { padding: 84px 32px; }
@@ -406,7 +402,7 @@
     }
 
     .section-title {
-      font-size: clamp(24px, 2.8vw, 36px);
+      font-size: clamp(26px, 3vw, 38px);
       font-weight: 800;
       letter-spacing: -0.5px;
       margin-bottom: 12px;
@@ -416,7 +412,7 @@
       color: var(--text-muted);
       font-size: 16px;
       max-width: 520px;
-      margin-bottom: 48px;
+      margin-bottom: 52px;
       line-height: 1.7;
     }
 
@@ -430,21 +426,25 @@
     .feature-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      transition: border-color 0.2s, transform 0.2s;
+      border-radius: 14px;
+      padding: 30px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     }
-    .feature-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .feature-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(99,102,241,0.12);
+    }
 
     .feature-icon {
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       background: var(--primary-dim);
-      border-radius: 10px;
+      border-radius: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
@@ -452,10 +452,10 @@
 
     .feature-list {
       list-style: none;
-      margin-top: 14px;
+      margin-top: 16px;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 8px;
     }
     .feature-list li {
       display: flex;
@@ -473,6 +473,37 @@
       flex-shrink: 0;
     }
 
+    /* ── HOW IT WORKS ── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 30px;
+      position: relative;
+    }
+
+    .step-num {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--primary-dim);
+      line-height: 1;
+      margin-bottom: 16px;
+      font-variant-numeric: tabular-nums;
+      background: linear-gradient(135deg, rgba(99,102,241,0.4), rgba(99,102,241,0.1));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .step-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .step-card p { color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+
     /* ── MCP ── */
     .section-dark { background: var(--surface); }
 
@@ -488,9 +519,9 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, transform 0.15s;
     }
-    .mcp-tool:hover { border-color: var(--primary); }
+    .mcp-tool:hover { border-color: var(--primary); transform: translateY(-1px); }
 
     .mcp-name {
       font-family: 'SF Mono', 'Fira Code', monospace;
@@ -512,6 +543,15 @@
       overflow-x: auto;
     }
 
+    .t-comment { color: #475569; }
+    .t-key { color: #93c5fd; }
+    .t-str { color: #86efac; }
+    .t-brace { color: #64748b; }
+    .t-prompt { color: var(--primary); user-select: none; }
+    .t-cmd { color: #94a3b8; }
+    .t-flag { color: #a5b4fc; }
+    .t-num { color: #fdba74; }
+
     /* ── PRICING ── */
     .pricing-grid {
       display: grid;
@@ -523,18 +563,21 @@
     .price-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 32px;
       position: relative;
+      transition: transform 0.2s;
     }
+    .price-card:hover { transform: translateY(-3px); }
     .price-card.featured {
       border-color: var(--primary);
-      background: linear-gradient(160deg, #1e293b 0%, #1b2444 100%);
+      background: linear-gradient(160deg, #1e293b 0%, #1a2340 100%);
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.3), 0 20px 60px rgba(99,102,241,0.12);
     }
 
     .popular-badge {
       position: absolute;
-      top: -13px;
+      top: -14px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--primary);
@@ -543,7 +586,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      padding: 4px 14px;
+      padding: 4px 16px;
       border-radius: 20px;
       white-space: nowrap;
     }
@@ -558,7 +601,7 @@
     }
 
     .plan-price {
-      font-size: 42px;
+      font-size: 44px;
       font-weight: 800;
       letter-spacing: -1.5px;
       line-height: 1;
@@ -574,8 +617,8 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 26px;
+      gap: 11px;
+      margin-bottom: 28px;
     }
     .plan-features li {
       display: flex;
@@ -584,28 +627,190 @@
       font-size: 14px;
       color: var(--text-muted);
     }
-    .check { flex-shrink: 0; margin-top: 1px; color: var(--green); }
+    .check { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── PRICING FAQ ── */
+    .pricing-faq { max-width: 720px; margin: 0 auto; }
+
+    .pfaq-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .pfaq-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .pfaq-q {
+      width: 100%;
+      background: var(--surface);
+      border: none;
+      padding: 18px 22px;
+      text-align: left;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: background 0.15s;
+    }
+    .pfaq-q:hover { background: var(--surface2); }
+
+    .pfaq-arrow {
+      font-size: 18px;
+      color: var(--text-dim);
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .pfaq-item.open .pfaq-arrow { transform: rotate(45deg); }
+
+    .pfaq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: var(--bg);
+    }
+    .pfaq-a-inner {
+      padding: 0 22px 18px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      text-align: center;
+      padding: 80px 32px;
+    }
+
+    .cta-inner {
+      max-width: 600px;
+      margin: 0 auto;
+      background: linear-gradient(160deg, var(--surface) 0%, #1a2340 100%);
+      border: 1px solid rgba(99,102,241,0.35);
+      border-radius: 20px;
+      padding: 52px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-inner::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 300px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-inner h2 {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+
+    .cta-inner p {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 30px;
+      line-height: 1.65;
+      position: relative;
+    }
+
+    .cta-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+    }
 
     /* ── FOOTER ── */
     footer {
       background: var(--surface);
       border-top: 1px solid var(--border);
-      padding: 28px 32px;
+      padding: 32px 32px;
     }
 
     .footer-inner {
       max-width: 1100px;
       margin: 0 auto;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 40px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand p {
+      color: var(--text-dim);
+      font-size: 13px;
+      margin-top: 8px;
+      max-width: 220px;
+      line-height: 1.6;
+    }
+
+    .footer-cols {
+      display: flex;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .footer-col h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .footer-col ul a {
+      color: var(--text-dim);
+      font-size: 13px;
+      transition: color 0.15s;
+    }
+    .footer-col ul a:hover { color: var(--text-muted); }
+
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 12px;
     }
+
+    .footer-copy { color: var(--text-dim); font-size: 13px; }
 
     .footer-links {
       display: flex;
-      gap: 22px;
+      gap: 20px;
       list-style: none;
     }
     .footer-links a {
@@ -615,27 +820,27 @@
     }
     .footer-links a:hover { color: var(--text-muted); }
 
-    .footer-copy { color: var(--text-dim); font-size: 13px; }
-
     /* ── RESPONSIVE ── */
     @media (max-width: 960px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 44px; }
-      .terminal { display: none; }
       .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
       .mcp-grid { grid-template-columns: repeat(2, 1fr); }
       .pricing-grid { grid-template-columns: 1fr; }
       .nav-links { display: none; }
+      .mockup-body { grid-template-columns: 1fr; }
+      .score-ring { margin: 0 auto; }
     }
 
     @media (max-width: 600px) {
       nav { padding: 0 16px; }
-      .hero { padding: 48px 16px 36px; }
+      .hero { padding: 60px 16px 48px; }
       section { padding: 56px 16px; }
-      .demo-bar { padding: 24px 16px; }
-      .demo-row { flex-direction: column; }
+      .stats-bar { padding: 24px 16px; }
+      .stat-div { display: none; }
       .mcp-grid { grid-template-columns: 1fr; }
-      footer { padding: 22px 16px; }
-      .footer-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
+      footer { padding: 24px 16px; }
+      .footer-top { flex-direction: column; }
+      .cta-inner { padding: 36px 24px; }
     }
   </style>
 </head>
@@ -644,11 +849,12 @@
 <!-- NAV -->
 <nav>
   <a href="index.html" class="nav-logo">
-    <img src="logo.png" alt="Naraseo AI" style="height: 32px; width: auto;" />
+    <img src="logo.png" alt="Naraseo AI" style="height:32px;width:auto;" />
   </a>
 
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#mcp">API / MCP</a></li>
     <li><a href="docs.html">Docs</a></li>
@@ -656,77 +862,93 @@
 
   <div class="nav-actions">
     <a href="login.html" class="btn btn-ghost">Log In</a>
-    <a href="login.html" class="btn btn-primary">Get Started</a>
+    <a href="login.html" class="btn btn-primary">Get Started Free</a>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
+  <div class="hero-glow"></div>
   <div class="hero-inner">
-    <div>
-      <div class="hero-badge">
-        <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg>
-        Live — MCP server + REST API
-      </div>
-      <h1>Win Every Search —<br /><span class="gradient">SEO to AI Discovery</span></h1>
-      <p class="hero-sub">
-        One platform. Chrome extension, REST API, MCP server.
-        For teams, agencies, and AI agents that need real SEO intelligence — no third-party tools.
-      </p>
-      <div class="hero-ctas">
-        <a href="#extension" class="btn btn-primary btn-lg">Install Extension</a>
-        <a href="login.html" class="btn btn-outline btn-lg">Get API Access</a>
-      </div>
+    <div class="hero-badge fade-up">
+      <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg>
+      Live — MCP Server · REST API · Chrome Extension
     </div>
 
-    <div class="terminal">
-      <div class="terminal-bar">
-        <div class="t-dot" style="background:#ef4444"></div>
-        <div class="t-dot" style="background:#eab308"></div>
-        <div class="t-dot" style="background:#22c55e"></div>
-        <span class="terminal-label">bash — naraseo audit</span>
-      </div>
-      <div class="terminal-body">
-        <div class="t-comment"># Audit any URL via REST API</div>
-        <div style="margin-top:8px">
-          <span class="t-prompt">$</span><span class="t-cmd"> curl -s -X POST \</span>
+    <h1 class="fade-up delay-1">
+      The SEO Platform Built for<br/>
+      <span class="gradient">Teams, Devs & AI Agents</span>
+    </h1>
+
+    <p class="hero-sub fade-up delay-2">
+      Audit any site, research keywords, track local rankings, and let AI fix your SEO — all through one platform. Use the Chrome extension, the API, or plug directly into Claude and Cursor.
+    </p>
+
+    <div class="hero-ctas fade-up delay-3">
+      <a href="login.html" class="btn btn-primary btn-lg">Start Free — No Card Needed</a>
+      <a href="docs.html" class="btn btn-outline btn-lg">Read the Docs</a>
+    </div>
+
+    <!-- Product Mockup -->
+    <div class="mockup-wrap fade-up">
+      <div class="mockup-glow"></div>
+      <div class="audit-mockup">
+        <div class="mockup-topbar">
+          <div class="m-dot" style="background:#ef4444"></div>
+          <div class="m-dot" style="background:#eab308"></div>
+          <div class="m-dot" style="background:#22c55e"></div>
+          <span class="mockup-url">yourwebsite.com — SEO Audit</span>
         </div>
-        <div style="padding-left:18px">
-          <span class="t-flag">-H </span><span class="t-str">"Content-Type: application/json"</span> <span class="t-cmd">\</span>
+        <div class="mockup-body">
+          <div>
+            <div class="score-ring"><span>87</span></div>
+          </div>
+          <div class="mockup-right">
+            <div class="score-meta">
+              <div class="score-grade">Grade A−</div>
+              <div class="score-label">Overall SEO Score</div>
+            </div>
+            <div class="check-rows">
+              <div class="check-row good"><span class="cr-icon">✓</span> Meta title &amp; description present</div>
+              <div class="check-row good"><span class="cr-icon">✓</span> H1 tag found with proper hierarchy</div>
+              <div class="check-row warn"><span class="cr-icon">⚠</span> 3 images are missing alt text</div>
+              <div class="check-row bad"><span class="cr-icon">✗</span> No structured data (schema) detected</div>
+            </div>
+          </div>
         </div>
-        <div style="padding-left:18px">
-          <span class="t-flag">-H </span><span class="t-str">"Authorization: Bearer $API_KEY"</span> <span class="t-cmd">\</span>
-        </div>
-        <div style="padding-left:18px">
-          <span class="t-flag">-d </span><span class="t-str">'{"url":"https://example.com"}'</span> <span class="t-cmd">\</span>
-        </div>
-        <div style="padding-left:18px">
-          <span class="t-cmd">https://api.naraseo.ai/api/v1/audit</span>
-        </div>
-        <div style="margin-top:14px" class="t-comment"># Response</div>
-        <div style="margin-top:4px">
-          <span class="t-brace">{</span><br/>
-          <span style="padding-left:16px"><span class="t-key">"score"</span><span class="t-brace">: </span><span class="t-num">87</span><span class="t-brace">, </span></span><br/>
-          <span style="padding-left:16px"><span class="t-key">"grade"</span><span class="t-brace">: </span><span class="t-str">"B+"</span><span class="t-brace">, </span></span><br/>
-          <span style="padding-left:16px"><span class="t-key">"issues"</span><span class="t-brace">: [</span><span class="t-str">"Missing H1"</span><span class="t-brace">, </span><span class="t-str">"Speed optimization needed"</span><span class="t-brace">],</span></span><br/>
-          <span style="padding-left:16px"><span class="t-key">"keywords"</span><span class="t-brace">: [...],</span></span><br/>
-          <span style="padding-left:16px"><span class="t-key">"fixes"</span><span class="t-brace">: [...]</span></span><br/>
-          <span class="t-brace">}</span>
+        <div class="mockup-vitals">
+          <div class="vital"><div class="vital-val">1.2s</div><div class="vital-key">LCP</div></div>
+          <div class="vital"><div class="vital-val">0.8s</div><div class="vital-key">FCP</div></div>
+          <div class="vital"><div class="vital-val">0.01</div><div class="vital-key">CLS</div></div>
+          <div class="vital"><div class="vital-val">8</div><div class="vital-key">Issues Found</div></div>
+          <div class="vital"><div class="vital-val">3</div><div class="vital-key">Critical Fixes</div></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- GET API KEY BAR -->
-<div class="demo-bar">
-  <div class="demo-bar-inner">
-    <div class="demo-bar-label">Start auditing your site in 60 seconds</div>
-    <div class="demo-row">
-      <code class="demo-input" style="display:flex;align-items:center;font-family:monospace;font-size:13px;color:var(--text-muted);">
-        curl -X POST https://naraseo.ai/api/v1/audit -H "Authorization: Bearer YOUR_KEY" -d '{"url":"https://yoursite.com"}'
-      </code>
-      <a href="login.html" class="btn btn-primary">Get API Key</a>
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat fade-up">
+      <span class="stat-num">10</span>
+      <span class="stat-label">MCP AI Tools</span>
+    </div>
+    <div class="stat-div"></div>
+    <div class="stat fade-up delay-1">
+      <span class="stat-num">3</span>
+      <span class="stat-label">Access Methods</span>
+    </div>
+    <div class="stat-div"></div>
+    <div class="stat fade-up delay-2">
+      <span class="stat-num">100%</span>
+      <span class="stat-label">Free to Start</span>
+    </div>
+    <div class="stat-div"></div>
+    <div class="stat fade-up delay-3">
+      <span class="stat-num">7-Day</span>
+      <span class="stat-label">Refund Policy</span>
     </div>
   </div>
 </div>
@@ -735,12 +957,12 @@
 <section id="features">
   <div class="section-inner">
     <div class="section-label">Platform</div>
-    <h2 class="section-title">Three ways to access SEO intelligence</h2>
-    <p class="section-sub">Use whichever interface fits your workflow. All three are powered by the same underlying engine.</p>
+    <h2 class="section-title fade-up">Three ways to access SEO intelligence</h2>
+    <p class="section-sub fade-up delay-1">Use whichever fits your workflow. All three are powered by the same underlying engine — pick one or use all three.</p>
 
     <div class="features-grid">
       <!-- Extension -->
-      <div class="feature-card">
+      <div class="feature-card fade-up">
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <rect x="2" y="4" width="18" height="13" rx="2" stroke="#6366f1" stroke-width="1.7"/>
@@ -749,17 +971,17 @@
           </svg>
         </div>
         <h3>Chrome Extension</h3>
-        <p>Audit any page in one click. Get your SEO score, actionable fixes, and a PDF report — all inline on any website without leaving your browser.</p>
+        <p>Audit any page in one click. Get your SEO score, actionable fixes, and a PDF report — all right in your browser, on any website.</p>
         <ul class="feature-list">
           <li>On-page score and letter grade</li>
-          <li>Speed Metrics analysis</li>
+          <li>Core Web Vitals (speed metrics)</li>
           <li>One-click schema validation</li>
-          <li>PDF export to local downloads</li>
+          <li>PDF export to your downloads</li>
         </ul>
       </div>
 
       <!-- API -->
-      <div class="feature-card">
+      <div class="feature-card fade-up delay-1">
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <rect x="2" y="2" width="18" height="18" rx="3" stroke="#6366f1" stroke-width="1.7"/>
@@ -767,7 +989,7 @@
           </svg>
         </div>
         <h3>REST API</h3>
-        <p>Full SEO intelligence via clean JSON API. Integrate into your product, CI pipeline, or reporting workflow with a single HTTP call.</p>
+        <p>Full SEO intelligence via clean JSON API. Integrate into your product, pipeline, or reporting workflow with a single HTTP call.</p>
         <ul class="feature-list">
           <li>Keyword research and difficulty scores</li>
           <li>Competitor gap analysis</li>
@@ -777,7 +999,7 @@
       </div>
 
       <!-- MCP -->
-      <div class="feature-card">
+      <div class="feature-card fade-up delay-2">
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <circle cx="5" cy="11" r="2.5" stroke="#6366f1" stroke-width="1.5"/>
@@ -787,45 +1009,74 @@
           </svg>
         </div>
         <h3>MCP Server</h3>
-        <p>Claude, Cursor, and Windsurf can call our SEO tools natively. Give your AI agent full SEO superpowers with a single JSON config block.</p>
+        <p>Claude, Cursor, and Windsurf can call our SEO tools natively. Give your AI agent full SEO superpowers with a single config block.</p>
         <ul class="feature-list">
           <li>10 native MCP tool definitions</li>
-          <li>Streamable HTTP and SSE transports</li>
-          <li>Claude Desktop compatible</li>
+          <li>Works with Claude Desktop &amp; Cursor</li>
           <li>Autonomous site-wide fix engine</li>
+          <li>No API wrappers to write</li>
         </ul>
       </div>
     </div>
   </div>
 </section>
 
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="section-dark">
+  <div class="section-inner">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title fade-up">From zero to SEO results in 3 steps</h2>
+    <p class="section-sub fade-up delay-1">No complicated setup. No learning curve. Just sign up and start auditing.</p>
+
+    <div class="steps-grid">
+      <div class="step-card fade-up">
+        <div class="step-num">01</div>
+        <h3>Create a Free Account</h3>
+        <p>Sign up in under a minute — no credit card needed. You get 100 requests per day across all tools, free forever.</p>
+      </div>
+
+      <div class="step-card fade-up delay-1">
+        <div class="step-num">02</div>
+        <h3>Connect Your Workflow</h3>
+        <p>Install the Chrome extension for instant in-browser audits, grab an API key for code integrations, or add our MCP server to your AI agent.</p>
+      </div>
+
+      <div class="step-card fade-up delay-2">
+        <div class="step-num">03</div>
+        <h3>Audit, Fix &amp; Rank</h3>
+        <p>Get a detailed SEO score with prioritised fixes, keyword gaps, competitor insights, and AI-generated recommendations — in seconds.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- FOR AI BUILDERS / MCP -->
-<section id="mcp" class="section-dark">
+<section id="mcp">
   <div class="section-inner">
     <div class="section-label">For AI Builders</div>
-    <h2 class="section-title">10 MCP tools, ready for your agent</h2>
-    <p class="section-sub">Give Claude, Cursor, or any MCP-compatible agent full SEO capabilities. One config line — no API wrappers to write.</p>
+    <h2 class="section-title fade-up">10 MCP tools, ready for your agent</h2>
+    <p class="section-sub fade-up delay-1">Give Claude, Cursor, or any MCP-compatible agent full SEO capabilities. Add one config block — no extra code to write.</p>
 
     <div class="mcp-grid">
-      <div class="mcp-tool"><div class="mcp-name">seo_audit</div><div class="mcp-desc">Full on-page audit with score, grade, and prioritized issue list</div></div>
-      <div class="mcp-tool"><div class="mcp-name">solve</div><div class="mcp-desc">Autonomous: audit + keywords + schema + AI fixes in a single call</div></div>
-      <div class="mcp-tool"><div class="mcp-name">solve_site</div><div class="mcp-desc">Site-wide autonomous SEO via sitemap discovery</div></div>
-      <div class="mcp-tool"><div class="mcp-name">keyword_research</div><div class="mcp-desc">Keyword suggestions, search volume, and difficulty scores</div></div>
-      <div class="mcp-tool"><div class="mcp-name">schema_validate</div><div class="mcp-desc">Validate existing and generate new JSON-LD structured data</div></div>
-      <div class="mcp-tool"><div class="mcp-name">site_crawl</div><div class="mcp-desc">Crawl entire site, detect broken links and missing meta tags</div></div>
-      <div class="mcp-tool"><div class="mcp-name">geo_grid</div><div class="mcp-desc">Local rank tracking across a configurable geographic grid</div></div>
-      <div class="mcp-tool"><div class="mcp-name">local_seo_audit</div><div class="mcp-desc">NAP consistency, local authority signals, local ranking factors</div></div>
-      <div class="mcp-tool"><div class="mcp-name">competitor_analysis</div><div class="mcp-desc">Keyword gap analysis with real domain authority via OpenPageRank</div></div>
-      <div class="mcp-tool"><div class="mcp-name">seo_chat</div><div class="mcp-desc">Conversational SEO assistant with full page and site context</div></div>
+      <div class="mcp-tool fade-up"><div class="mcp-name">seo_audit</div><div class="mcp-desc">Full on-page audit with score, grade, and prioritised issue list</div></div>
+      <div class="mcp-tool fade-up delay-1"><div class="mcp-name">solve</div><div class="mcp-desc">Autonomous: audit + keywords + schema + AI fixes in one call</div></div>
+      <div class="mcp-tool fade-up delay-2"><div class="mcp-name">solve_site</div><div class="mcp-desc">Site-wide autonomous SEO fix via sitemap discovery</div></div>
+      <div class="mcp-tool fade-up"><div class="mcp-name">keyword_research</div><div class="mcp-desc">Keyword suggestions, search volume, and difficulty scores</div></div>
+      <div class="mcp-tool fade-up delay-1"><div class="mcp-name">schema_validate</div><div class="mcp-desc">Validate and generate structured data (JSON-LD)</div></div>
+      <div class="mcp-tool fade-up delay-2"><div class="mcp-name">site_crawl</div><div class="mcp-desc">Crawl a site, detect broken links and missing meta tags</div></div>
+      <div class="mcp-tool fade-up"><div class="mcp-name">geo_grid</div><div class="mcp-desc">Local rank tracking across a configurable geographic grid</div></div>
+      <div class="mcp-tool fade-up delay-1"><div class="mcp-name">local_seo_audit</div><div class="mcp-desc">NAP consistency, local authority, local ranking factors</div></div>
+      <div class="mcp-tool fade-up delay-2"><div class="mcp-name">competitor_analysis</div><div class="mcp-desc">Keyword gap analysis with real domain authority data</div></div>
+      <div class="mcp-tool fade-up"><div class="mcp-name">seo_chat</div><div class="mcp-desc">Conversational SEO assistant with full page context</div></div>
     </div>
 
-    <div class="mcp-config">
-      <span class="t-comment">// claude_desktop_config.json — add this block</span><br/>
+    <div class="mcp-config fade-up">
+      <span class="t-comment">// Claude Desktop — claude_desktop_config.json</span><br/>
       <span class="t-brace">{</span><br/>
       <span style="padding-left:20px"><span class="t-key">"mcpServers"</span><span class="t-brace">: {</span></span><br/>
       <span style="padding-left:40px"><span class="t-key">"naraseo-ai"</span><span class="t-brace">: {</span></span><br/>
       <span style="padding-left:60px"><span class="t-key">"command"</span><span class="t-brace">: </span><span class="t-str">"npx"</span><span class="t-brace">,</span></span><br/>
-      <span style="padding-left:60px"><span class="t-key">"args"</span><span class="t-brace">: [</span><span class="t-str">"mcp-remote"</span><span class="t-brace">, </span><span class="t-str">"https://api.naraseo.ai/mcp/sse"</span><span class="t-brace">]</span></span><br/>
+      <span style="padding-left:60px"><span class="t-key">"args"</span><span class="t-brace">: [</span><span class="t-str">"mcp-remote"</span><span class="t-brace">, </span><span class="t-str">"https://naraseoai.onrender.com/mcp/sse"</span><span class="t-brace">]</span></span><br/>
       <span style="padding-left:40px"><span class="t-brace">}</span></span><br/>
       <span style="padding-left:20px"><span class="t-brace">}</span></span><br/>
       <span class="t-brace">}</span>
@@ -834,52 +1085,52 @@
 </section>
 
 <!-- PRICING -->
-<section id="pricing">
+<section id="pricing" class="section-dark">
   <div class="section-inner">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Simple, predictable pricing</h2>
-    <p class="section-sub">Start free with no credit card required. Scale when you need to. No hidden fees, no per-seat charges.</p>
+    <h2 class="section-title fade-up">Simple, honest pricing</h2>
+    <p class="section-sub fade-up delay-1">Start completely free — no credit card, no trial expiry. Upgrade when you need more.</p>
 
     <div class="pricing-grid">
       <!-- FREE -->
-      <div class="price-card">
+      <div class="price-card fade-up">
         <div class="plan-name">Free</div>
         <div class="plan-price">$0</div>
-        <div class="plan-tagline">Forever free. No credit card required.</div>
+        <div class="plan-tagline">No credit card required. Free forever.</div>
         <hr class="plan-divider"/>
         <ul class="plan-features">
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>100 requests per day</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>SEO audit and scoring</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>SEO audit with letter grade</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Keyword research</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Schema validation</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Competitor analysis</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>SEO chat assistant</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>10 requests per minute</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>AI chat assistant</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Chrome extension access</li>
         </ul>
-        <a href="login.html" class="btn btn-outline" style="width:100%;justify-content:center;padding:12px 0;">Get Started Free</a>
+        <a href="login.html" class="btn btn-outline" style="width:100%;justify-content:center;padding:13px 0;">Get Started Free</a>
       </div>
 
       <!-- PRO -->
-      <div class="price-card featured">
+      <div class="price-card featured fade-up delay-1">
         <div class="popular-badge">Most Popular</div>
         <div class="plan-name">Pro</div>
         <div class="plan-price">$49<span class="period">/mo</span></div>
-        <div class="plan-tagline">For growing teams and serious SEO.</div>
+        <div class="plan-tagline">For growing teams doing serious SEO.</div>
         <hr class="plan-divider"/>
         <ul class="plan-features">
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>1,000 requests per day</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Free</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Full site crawl</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Geo-grid rank tracking</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Autonomous fix engine</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>PDF report generation</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Geo-grid local rank tracking</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>AI-powered fix engine</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>PDF audit report export</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>60 requests per minute</li>
         </ul>
-        <a href="login.html" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px 0;">Get Started</a>
+        <a href="login.html" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px 0;">Upgrade to Pro</a>
       </div>
 
       <!-- AGENCY -->
-      <div class="price-card">
+      <div class="price-card fade-up delay-2">
         <div class="plan-name">Agency</div>
         <div class="plan-price">$199<span class="period">/mo</span></div>
         <div class="plan-tagline">For agencies and high-volume platforms.</div>
@@ -887,65 +1138,148 @@
         <ul class="plan-features">
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited requests</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Pro</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>White-label headers (X-Brand)</li>
-          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>WordPress auto-apply</li>
+          <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>White-label reporting</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Priority support</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Custom integrations</li>
           <li><svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>200 requests per minute</li>
         </ul>
-        <a href="login.html" class="btn btn-outline" style="width:100%;justify-content:center;padding:12px 0;">Get Started</a>
+        <a href="login.html" class="btn btn-outline" style="width:100%;justify-content:center;padding:13px 0;">Contact Us</a>
+      </div>
+    </div>
+
+    <!-- Pricing FAQ -->
+    <div style="margin-top:60px">
+      <div class="pricing-faq">
+        <div class="pfaq-title fade-up">Common questions about pricing</div>
+
+        <div class="pfaq-item fade-up">
+          <button class="pfaq-q" onclick="toggleFaq(this)">
+            Do I need a credit card to start?
+            <span class="pfaq-arrow">+</span>
+          </button>
+          <div class="pfaq-a"><div class="pfaq-a-inner">No. The Free plan requires no payment information. You get 100 requests per day across all tools — SEO audits, keywords, schema validation, and more — completely free forever.</div></div>
+        </div>
+
+        <div class="pfaq-item fade-up delay-1">
+          <button class="pfaq-q" onclick="toggleFaq(this)">
+            Can I change or cancel my plan at any time?
+            <span class="pfaq-arrow">+</span>
+          </button>
+          <div class="pfaq-a"><div class="pfaq-a-inner">Yes, absolutely. You can upgrade, downgrade, or cancel anytime from your dashboard. If you cancel a paid plan, you'll keep access until the end of your billing period — no sudden cut-offs.</div></div>
+        </div>
+
+        <div class="pfaq-item fade-up delay-2">
+          <button class="pfaq-q" onclick="toggleFaq(this)">
+            Do you offer refunds?
+            <span class="pfaq-arrow">+</span>
+          </button>
+          <div class="pfaq-a"><div class="pfaq-a-inner">Yes. We offer a 7-day money-back guarantee on all paid plans. If you're not happy for any reason, just email us at <a href="mailto:support@naraseo.ai" style="color:var(--primary)">support@naraseo.ai</a> and we'll refund you in full — no questions asked.</div></div>
+        </div>
+
+        <div class="pfaq-item fade-up">
+          <button class="pfaq-q" onclick="toggleFaq(this)">
+            What counts as one "request"?
+            <span class="pfaq-arrow">+</span>
+          </button>
+          <div class="pfaq-a"><div class="pfaq-a-inner">Each time you run a tool — an audit, a keyword search, a schema check, etc. — counts as one request. For example, auditing one URL = 1 request. Bulk site crawls count as 1 request per page crawled.</div></div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- EXTENSION CTA -->
-<section id="extension" class="section-dark">
-  <div class="section-inner" style="max-width:620px; margin:0 auto; text-align:center;">
-    <div class="section-label" style="justify-content:center; display:flex;">Chrome Extension</div>
-    <h2 class="section-title">SEO scores on every page you visit</h2>
-    <p style="color:var(--text-muted); font-size:16px; margin-bottom:32px; line-height:1.7;">
-      Install Naraseo AI and get instant audits, speed analysis, schema validation, and one-click PDF reports — without leaving your browser tab.
-    </p>
-    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-      <a href="#" class="btn btn-primary btn-lg">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <circle cx="9" cy="9" r="7.5" stroke="white" stroke-width="1.5"/>
-          <path d="M9 5.5v3.5l2 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Install for Chrome
-      </a>
-      <a href="login.html" class="btn btn-outline btn-lg">Get API Access</a>
+<!-- CTA BANNER -->
+<div class="cta-section">
+  <div class="cta-inner fade-up">
+    <h2>Ready to rank higher?</h2>
+    <p>Start auditing for free in under a minute. No setup, no credit card, no catch.</p>
+    <div class="cta-btns">
+      <a href="login.html" class="btn btn-primary btn-lg">Get Started Free</a>
+      <a href="docs.html" class="btn btn-ghost btn-lg">Explore the API</a>
     </div>
   </div>
-</section>
+</div>
 
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <a href="index.html" class="nav-logo">
-      <div class="nav-logo-mark">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-          <path d="M1.5 3h12v1.8h-12V3zm0 3.6h8v1.8h-8V6.6zm0 3.6h10v1.8h-10v-1.8z" fill="white"/>
-        </svg>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="index.html" class="nav-logo" style="font-size:16px;">
+          <div class="nav-logo-mark">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M1.5 3h12v1.8h-12V3zm0 3.6h8v1.8h-8V6.6zm0 3.6h10v1.8h-10v-1.8z" fill="white"/>
+            </svg>
+          </div>
+          Naraseo AI
+        </a>
+        <p>SEO intelligence for teams, developers, and AI agents.</p>
       </div>
-      Naraseo AI
-    </a>
-    <ul class="footer-links">
-      <li><a href="privacy.html">Privacy</a></li>
-      <li><a href="terms.html">Terms</a></li>
-      <li><a href="help.html">Support</a></li>
-      <li><a href="docs.html">API Docs</a></li>
-    </ul>
-    <div class="footer-copy">&#169; 2026 Naraseo AI. All rights reserved.</div>
+
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#mcp">MCP Server</a></li>
+            <li><a href="docs.html">API Docs</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="help.html">Help Center</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="mailto:support@naraseo.ai">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">&#169; 2026 Naraseo AI. All rights reserved.</div>
+      <ul class="footer-links">
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="help.html">Support</a></li>
+      </ul>
+    </div>
   </div>
 </footer>
 
 <script>
-  // Copy curl example to clipboard
-  document.querySelector('.demo-input') && document.querySelector('.demo-input').addEventListener('click', function() {
-    navigator.clipboard && navigator.clipboard.writeText(this.textContent.trim());
-  });
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Pricing FAQ
+  function toggleFaq(btn) {
+    const item = btn.closest('.pfaq-item');
+    const answer = item.querySelector('.pfaq-a');
+    const isOpen = item.classList.contains('open');
+
+    // Close all
+    document.querySelectorAll('.pfaq-item.open').forEach(i => {
+      i.classList.remove('open');
+      i.querySelector('.pfaq-a').style.maxHeight = '0';
+    });
+
+    // Open clicked if was closed
+    if (!isOpen) {
+      item.classList.add('open');
+      answer.style.maxHeight = answer.scrollHeight + 'px';
+    }
+  }
 </script>
 </body>
 </html>
