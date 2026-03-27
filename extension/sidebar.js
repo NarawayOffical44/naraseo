@@ -1141,7 +1141,7 @@ async function runKeywordResearch() {
 
   btn.textContent = 'Analysing...';
   btn.disabled    = true;
-  body.innerHTML  = '<div class="kw-loading"> Naraseo AI searching keywords…</div>';
+  body.innerHTML  = '<div class="kw-loading"> Discovering keywords…</div>';
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -1977,7 +1977,7 @@ async function runSiteCrawl(maxPages) {
           <span class="crawl-title"> Crawling Site…</span>
           <span class="crawl-sub">Up to ${maxPages} pages · scanning SEO + GEO</span>
         </div>
-        <div class="crawl-progress" id="crawl-progress">Naraseo AI running technical analysis across your site…</div>
+        <div class="crawl-progress" id="crawl-progress">Crawling pages… (this may take a moment)</div>
       </div>`;
   }
 
@@ -2503,8 +2503,8 @@ function copySuggestion(value, btn) {
 const CHAT_AGENT_ACTIONS = [
   {
     patterns: [/\brun.?audit\b/i, /\banalyze\s+(this\s+)?page\b/i, /\bcheck\s+seo\b/i, /\bscan\s+page\b/i, /\bstart audit\b/i],
-    label: 'Naraseo AI scanning your page...',
-    reply: 'Starting audit now. Check the Summary tab for your full results.',
+    label: 'Scanning page...',
+    reply: 'Audit started. Check the Summary tab for your full results.',
     action: async () => { switchView('home'); runAudit(); },
   },
   {
@@ -2566,8 +2566,8 @@ const CHAT_AGENT_ACTIONS = [
   },
   {
     patterns: [/\bkeyword research\b/i, /\bkeyword analysis\b/i, /\bcheck keywords?\b/i, /\banalyze keywords?\b/i, /\bkeyword gaps?\b/i],
-    label: 'Naraseo AI searching keywords...',
-    reply: 'Naraseo AI is searching keywords for this page. Check the **Keyword Research** tab for primary keywords, content gaps, and quick wins.',
+    label: 'Discovering keywords...',
+    reply: 'Running keyword analysis. Check the **Keyword Research** tab for primary keywords, content gaps, and quick wins.',
     action: async () => { switchView('home'); runKeywordResearch(); },
   },
   {
