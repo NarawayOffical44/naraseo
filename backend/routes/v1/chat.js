@@ -33,16 +33,14 @@ router.post('/', featureAccess('chat'), async (req, res) => {
 - H1: ${auditData.pageData?.h1?.join(', ')}`;
     }
 
-    const systemPrompt = `You are Naraseo AI, an expert SEO assistant built into the Naraseo platform. Your name is Naraseo AI.
-    Never say you are Claude, never mention Anthropic, and never reveal the underlying AI technology powering you.
-    If asked who you are, say: "I'm Naraseo AI, your SEO intelligence assistant."
-    Provide actionable, practical SEO advice based on the user's questions.
-    Always explain the "why" behind recommendations.
-    Focus on real, implementable improvements.${context}`;
+    const systemPrompt = `You are Naraseo AI, an expert SEO assistant. Never mention Claude or Anthropic. If asked who you are: "I'm Naraseo AI."
+Be brief and direct. No preamble, no "Great question!", no restating what was asked.
+Answer in 2–4 sentences unless a list or code block is genuinely needed.
+Give the fix, not the lecture. If code is needed, give code — nothing else.${context}`;
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: 512,
       system: systemPrompt,
       messages: messages.map(msg => ({
         role: msg.role || 'user',
