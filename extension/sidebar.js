@@ -1141,7 +1141,7 @@ async function runKeywordResearch() {
 
   btn.textContent = 'Analysing...';
   btn.disabled    = true;
-  body.innerHTML  = '<div class="kw-loading"> Running AI keyword analysis…</div>';
+  body.innerHTML  = '<div class="kw-loading"> Naraseo AI searching keywords…</div>';
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -1479,14 +1479,14 @@ function getIssueImpact(issueText) {
 function buildActionList(issues, ps) {
   const actions = [];
 
-  // 1. PageSpeed opportunities (real Google data — highest credibility)
+  // 1. Speed opportunities (Naraseo AI technical analysis — highest credibility)
   if (ps?.opportunities?.length) {
     ps.opportunities.slice(0, 3).forEach(opp => {
       actions.push({
         type: 'speed',
         title: opp.title,
         why: opp.description?.substring(0, 100) || 'Improving page speed boosts rankings and conversions',
-        fix: 'See PageSpeed Insights for implementation details',
+        fix: 'Ask Naraseo AI chat for step-by-step fix instructions',
         points: 8,
         effort: '20-60 min',
         chatPrompt: `My site ${currentUrl} has a PageSpeed issue: "${opp.title}". Explain exactly how to fix it with specific code examples.`,
@@ -1807,7 +1807,7 @@ async function runAudit() {
         issues: scored.issues,
         categoryScores: scored.categoryScores,
         pageSpeedInsights: pageSpeed,
-        dataSource: pageSpeed ? 'DOM + Google PageSpeed' : 'DOM Analysis',
+        dataSource: pageSpeed ? 'Naraseo AI Full Analysis' : 'Naraseo AI',
         timestamp: new Date().toISOString(),
       };
     } else if (pageData) {
@@ -1977,7 +1977,7 @@ async function runSiteCrawl(maxPages) {
           <span class="crawl-title"> Crawling Site…</span>
           <span class="crawl-sub">Up to ${maxPages} pages · scanning SEO + GEO</span>
         </div>
-        <div class="crawl-progress" id="crawl-progress">Fetching pages… (this may take a moment)</div>
+        <div class="crawl-progress" id="crawl-progress">Naraseo AI running technical analysis across your site…</div>
       </div>`;
   }
 
@@ -2497,14 +2497,14 @@ function copySuggestion(value, btn) {
 }
 
 //  CHAT AGENT 
-// Detects SEO action commands and executes them without an AI API call.
-// Falls back to Claude AI for questions and open-ended requests.
+// Detects SEO action commands and executes them directly.
+// Falls back to Naraseo AI for questions and open-ended requests.
 
 const CHAT_AGENT_ACTIONS = [
   {
     patterns: [/\brun.?audit\b/i, /\banalyze\s+(this\s+)?page\b/i, /\bcheck\s+seo\b/i, /\bscan\s+page\b/i, /\bstart audit\b/i],
-    label: 'Running SEO audit on this page...',
-    reply: 'Starting audit now. Check the Summary tab for results.',
+    label: 'Naraseo AI scanning your page...',
+    reply: 'Starting audit now. Check the Summary tab for your full results.',
     action: async () => { switchView('home'); runAudit(); },
   },
   {
@@ -2566,8 +2566,8 @@ const CHAT_AGENT_ACTIONS = [
   },
   {
     patterns: [/\bkeyword research\b/i, /\bkeyword analysis\b/i, /\bcheck keywords?\b/i, /\banalyze keywords?\b/i, /\bkeyword gaps?\b/i],
-    label: 'Running keyword research...',
-    reply: 'Running AI keyword analysis on this page. Scroll to the **Keyword Research** section in the audit results to see primary keywords, gaps, and quick wins.',
+    label: 'Naraseo AI searching keywords...',
+    reply: 'Naraseo AI is searching keywords for this page. Check the **Keyword Research** tab for primary keywords, content gaps, and quick wins.',
     action: async () => { switchView('home'); runKeywordResearch(); },
   },
   {
@@ -3157,13 +3157,13 @@ function rptOffPageSection(d) {
   const bl = d.backlinks;
   const pr = bl.pageRank ?? bl.openPageRank ?? bl.domainRating ?? '--';
   const dr = bl.domainRank != null ? `#${Number(bl.domainRank).toLocaleString()}` : (bl.referringDomains ?? '--');
-  const tbl = bl.totalBacklinks ?? (bl.domainRank != null ? 'See OpenPageRank' : '--');
+  const tbl = bl.totalBacklinks ?? (bl.domainRank != null ? 'Naraseo AI' : '--');
   return rptCard('Off-Page / Domain Authority', '#7c3aed', `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
       ${[
-        ['Google PageRank', pr, 'scale 0–10'],
+        ['Authority Score', pr, 'scale 0–10'],
         ['Domain Rank', dr, 'global position'],
-        ['Source', rptEsc(bl.source || 'OpenPageRank'), bl.status === 'ok' ? 'live data' : 'unavailable'],
+        ['Analysis', rptEsc(bl.status === 'ok' ? 'Naraseo AI' : 'unavailable'), bl.status === 'ok' ? 'live data' : 'check connection'],
       ].map(([label, val, note]) => `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:14px;text-align:center;">
         <div style="font-size:${String(val).length > 6 ? '14' : '24'}px;font-weight:800;color:#1e293b;">${rptEsc(String(val))}</div>
         <div style="font-size:11px;font-weight:700;color:#0f172a;margin:3px 0;">${label}</div>

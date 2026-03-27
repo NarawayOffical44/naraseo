@@ -180,7 +180,7 @@ app.post('/mcp', async (req, res) => {
 });
 
 // GET /mcp/sse — SSE transport (legacy mcp-remote bridge, older MCP clients)
-app.get('/mcp/sse', async (req, res) => {
+app.get('/mcp/sse', rateLimiter(10, 60_000), async (req, res) => {
   try {
     const transport = new SSEServerTransport('/mcp/messages', res);
     const server = createMcpServer();
@@ -333,7 +333,7 @@ const demoUsers = new Map(); // userId → {id, name, email, password, plan, aud
 /**
  * POST /api/auth/signup
  */
-app.post('/api/auth/signup', async (req, res) => {
+app.post('/api/auth/signup', rateLimiter(5, 3_600_000), async (req, res) => {
   // DEMO MODE VERSION
   if (DEMO_MODE) {
     try {
