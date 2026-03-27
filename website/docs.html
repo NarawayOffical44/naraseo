@@ -329,56 +329,102 @@
     <section id="intro" class="doc-section active">
       <h1>Naraseo AI Documentation</h1>
       <p style="font-size: 16px; margin-bottom: 32px;">
-        Complete API reference for real SEO intelligence. Get started in minutes with code examples in Python, JavaScript, Node.js, and cURL.
+        Welcome! This guide covers everything from basic setup to advanced API integration. Whether you're a developer or just starting out, you'll find what you need here.
       </p>
+
+      <div class="note">
+        <strong>Not a developer?</strong> No problem. The <strong>Chrome Extension</strong> requires zero coding — install it and get instant SEO scores on any page. Jump to <a href="#" onclick="showSection('quick-start'); return false;">Quick Start</a> for both paths.
+      </div>
 
       <h2>What is Naraseo AI?</h2>
       <p>
-        Naraseo AI provides real SEO analysis via REST API. No third-party tools — we handle all the heavy lifting.
+        Naraseo AI is an all-in-one SEO intelligence platform. It analyses your website, finds issues hurting your rankings, and tells you exactly how to fix them — powered by AI. You don't need to be an SEO expert to use it.
       </p>
 
       <h3>Three Ways to Access</h3>
       <ul>
-        <li><strong>REST API</strong> — JSON HTTP endpoints for any platform</li>
-        <li><strong>Chrome Extension</strong> — One-click audits on any webpage</li>
-        <li><strong>MCP Server</strong> — Claude/Cursor integration for AI agents</li>
+        <li><strong>Chrome Extension</strong> — Install once, audit any webpage in one click. No code needed.</li>
+        <li><strong>REST API</strong> — Integrate SEO analysis directly into your app, dashboard, or pipeline.</li>
+        <li><strong>MCP Server</strong> — Connect Naraseo AI tools directly into Claude Desktop or Cursor as native AI tools.</li>
       </ul>
 
-      <h2>Platform Features</h2>
+      <h2>What Can Naraseo AI Do?</h2>
       <table>
         <tr>
           <th>Feature</th>
-          <th>Description</th>
+          <th>What it does</th>
           <th>Free</th>
           <th>Pro</th>
           <th>Agency</th>
         </tr>
         <tr>
           <td><strong>SEO Audit</strong></td>
-          <td>Full on-page + Speed Metrics</td>
+          <td>Scores your page 0–100, lists issues with fixes</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Keywords</strong></td>
-          <td>Keyword Intelligence Engine + AI analysis</td>
+          <td><strong>Speed Metrics</strong></td>
+          <td>Real page speed data (LCP, FCP, CLS)</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>Keyword Research</strong></td>
+          <td>Finds keywords, gaps, and quick wins for your page</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>Schema Validation</strong></td>
+          <td>Checks and generates structured data (rich results)</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>Competitor Analysis</strong></td>
+          <td>Compares your site against competitors' SEO</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>AI Chat Assistant</strong></td>
+          <td>Ask Naraseo AI anything about your page</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>PDF Report</strong></td>
+          <td>Professional report you can download or share</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
           <td><strong>Site Crawl</strong></td>
-          <td>Multi-page audit via sitemap</td>
+          <td>Audits every page on your site at once</td>
           <td>—</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Geo-Grid</strong></td>
-          <td>Local rank tracking</td>
+          <td><strong>Geo-Grid Ranking</strong></td>
+          <td>See where you rank locally across a map grid</td>
           <td>—</td>
           <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td><strong>White-Label</strong></td>
+          <td>Reports branded as your agency</td>
+          <td>—</td>
+          <td>—</td>
           <td>✓</td>
         </tr>
       </table>
@@ -387,16 +433,26 @@
     <!-- QUICK START -->
     <section id="quick-start" class="doc-section">
       <h1>Quick Start</h1>
-      <p>Get your first audit in 5 minutes</p>
+      <p>Get your first audit in under 5 minutes — no credit card needed.</p>
 
-      <h2>1. Get API Key</h2>
+      <h2>Option A — Chrome Extension (no code required)</h2>
       <ol>
-        <li><a href="login.html">Create account</a> (free)</li>
-        <li>Go to Dashboard → API Keys</li>
-        <li>Copy your JWT token</li>
+        <li><a href="login.html">Create a free account</a></li>
+        <li>Install the Naraseo AI Chrome Extension from the Chrome Web Store</li>
+        <li>Visit any webpage and click the Naraseo AI icon in your browser toolbar</li>
+        <li>Your full SEO audit loads instantly in the sidebar</li>
+      </ol>
+      <p>That's it — no API key, no code, no setup.</p>
+
+      <h2>Option B — REST API</h2>
+      <ol>
+        <li><a href="login.html">Create a free account</a></li>
+        <li>Go to your <a href="dashboard.html">Dashboard</a> → <strong>API Keys</strong></li>
+        <li>Click <strong>Generate Key</strong> and copy your API key</li>
+        <li>Use it in any request as shown below</li>
       </ol>
 
-      <h2>2. Make Your First Request</h2>
+      <h2>Your First API Request</h2>
 
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(event, 'curl')">cURL</button>
@@ -486,19 +542,24 @@ console.log('Grade:', response.data.data.grade);</div>
     <!-- AUTH -->
     <section id="auth" class="doc-section">
       <h1>Authentication</h1>
-      <p>All API requests require a Bearer token (JWT)</p>
+      <p>Every API request needs your personal API key to verify who you are and which plan you're on.</p>
 
-      <h2>Getting Your Token</h2>
+      <h2>Getting Your API Key</h2>
       <ol>
-        <li><a href="login.html">Sign up</a> for free</li>
-        <li>Open <a href="dashboard.html">Dashboard</a></li>
-        <li>Go to "API Keys" section</li>
-        <li>Copy your token</li>
+        <li><a href="login.html">Sign up for free</a> — no credit card needed</li>
+        <li>Open your <a href="dashboard.html">Dashboard</a></li>
+        <li>Click the <strong>API Keys</strong> tab</li>
+        <li>Click <strong>Generate Key</strong> — your key starts with <code>nrs_</code></li>
+        <li>Copy and store it somewhere safe — it won't be shown again</li>
       </ol>
 
-      <h2>Using Your Token</h2>
-      <p>Add to every request header:</p>
-      <div class="code-block">Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+      <div class="note">
+        <strong>Keep your key private.</strong> Don't paste it into public code, GitHub, or share it with others. If it's ever exposed, delete it from the dashboard and generate a new one.
+      </div>
+
+      <h2>Using Your API Key</h2>
+      <p>Add it to the <code>Authorization</code> header of every request, like this:</p>
+      <div class="code-block">Authorization: Bearer nrs_your_api_key_here</div>
 
       <h2>Subscription Tiers</h2>
       <table>
@@ -969,13 +1030,13 @@ downloadReport('https://example.com', 'YOUR_API_KEY');</div>
 
       <h2>What is MCP?</h2>
       <p>
-        Model Context Protocol allows AI agents to call tools directly. Instead of making HTTP requests, Claude can use SEO tools natively.
+        MCP (Model Context Protocol) lets AI tools like Claude Desktop and Cursor call Naraseo AI's SEO tools natively — as if they were built-in features. Instead of you copy-pasting data, your AI agent can audit, research, and fix SEO on its own.
       </p>
 
       <h2>Setup for Claude Desktop</h2>
       <ol>
-        <li>Open <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
-        <li>Add this configuration:</li>
+        <li>Open your Claude Desktop config file:<br><code>Windows: %APPDATA%\Claude\claude_desktop_config.json</code><br><code>Mac: ~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+        <li>Add this block inside the file (create the file if it doesn't exist):</li>
       </ol>
 
       <div class="code-block">{
@@ -988,19 +1049,26 @@ downloadReport('https://example.com', 'YOUR_API_KEY');</div>
 }</div>
 
       <ol start="3">
-        <li>Restart Claude Desktop</li>
-        <li>Ask Claude: "What are the SEO issues on example.com?"</li>
+        <li>Save the file and restart Claude Desktop</li>
+        <li>In Claude, just ask: <em>"What are the SEO issues on example.com?"</em> — it will use Naraseo AI automatically</li>
       </ol>
 
-      <h2>Available MCP Tools</h2>
+      <div class="note">
+        <strong>Works with:</strong> Claude Desktop, Cursor, Windsurf, and any MCP-compatible AI tool. No API key needed for MCP — the connection is handled automatically.
+      </div>
+
+      <h2>Available Tools (what your AI agent can do)</h2>
       <ul>
-        <li><strong>seo_audit</strong> — Full audit with score and issues</li>
-        <li><strong>solve</strong> — Autonomous audit + keywords + fixes</li>
-        <li><strong>keyword_research</strong> — Keyword analysis and gaps</li>
-        <li><strong>schema_validate</strong> — JSON-LD validation</li>
-        <li><strong>site_crawl</strong> — Multi-page crawl</li>
-        <li><strong>geo_grid</strong> — Local rank tracking</li>
-        <li><strong>competitor_analysis</strong> — Gap analysis with DA</li>
+        <li><strong>seo_audit</strong> — Full SEO audit with score, grade, and issues</li>
+        <li><strong>solve</strong> — One call: audit + keywords + AI-generated fixes</li>
+        <li><strong>solve_site</strong> — Full site audit and fix plan via sitemap</li>
+        <li><strong>keyword_research</strong> — Keyword opportunities and content gaps</li>
+        <li><strong>schema_validate</strong> — Validate and generate structured data</li>
+        <li><strong>site_crawl</strong> — Crawl every page, find broken links and issues</li>
+        <li><strong>geo_grid</strong> — Local rank tracking across a geographic grid</li>
+        <li><strong>local_seo_audit</strong> — Local SEO signals and consistency check</li>
+        <li><strong>competitor_analysis</strong> — Gap analysis with domain authority data</li>
+        <li><strong>seo_chat</strong> — Conversational SEO assistant with page context</li>
       </ul>
     </section>
 
