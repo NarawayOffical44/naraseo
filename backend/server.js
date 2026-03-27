@@ -19,6 +19,9 @@ import { apiKeyAuth, rateLimitMiddleware, whiteLabelHeaders } from './middleware
 import { createMcpServer } from './mcp/server.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { auditPage } from './lib/seoEngine.js';
+import { analyzeKeywords } from './lib/keywordEngine.js';
+import { validatePageSchemas } from './lib/schemaValidator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -2274,9 +2277,46 @@ LOCAL SEO STATUS:
 - Local Score: ${localSEO.score ?? '?'}/100
 ` : '';
 
-    const systemPrompt = `You are Naraseo AI, analyzing this page live. Never mention Claude or Anthropic. If asked who you are: "I'm Naraseo AI."
-Be extremely brief. No preamble, no filler, no restating the question. 1–3 sentences max unless code or a short list is needed.
-Give the fix directly. If code is needed, show only the code. Skip explanations unless asked.
+    // ── Intent detection: auto-run tools when user asks ──────────────────────
+    const msgLower = message.toLowerCase();
+    let liveData = '';
+
+    try {
+      if (url && url !== 'unknown') {
+        const wantsKeywords = /keyword|keyw|what (should|to) rank|search term|content gap|rank for/i.test(msgLower);
+        const wantsSchema = /schema|structured data|rich result|json.?ld|markup/i.test(msgLower);
+        const wantsAudit = /run audit|re.?audit|full audit|check (my |the )?(site|page|seo)|audit (this|my|the)/i.test(msgLower);
+
+        if (wantsAudit && !context?.score) {
+          const result = await auditPage(url);
+          liveData = `\n\nLIVE AUDIT JUST RAN:\nScore: ${result.score}/100 (${result.grade})\nCritical: ${result.issues?.filter(i=>i.type==='critical').map(i=>i.issue).join(', ') || 'none'}\nWarnings: ${result.issues?.filter(i=>i.type==='warning').length || 0}`;
+        } else if (wantsKeywords) {
+          const kw = context?.pageData;
+          if (kw) {
+            const kwResult = await analyzeKeywords(kw.title || '', kw.metaDescription || '', kw.bodyText || '');
+            const top = kwResult?.quickWins?.slice(0,3).map(w=>`${w.keyword} (${w.difficulty})`).join(', ') || '';
+            const gaps = kwResult?.contentGaps?.slice(0,3).join(', ') || '';
+            const primary = kwResult?.primaryKeyword || '';
+            liveData = `\n\nLIVE KEYWORD ANALYSIS:\nPrimary keyword: ${primary}\nSearch intent: ${kwResult?.searchIntent || 'unknown'}\nTop quick wins: ${top}\nContent gaps: ${gaps}\nTitle suggestion: ${kwResult?.titleSuggestion || ''}`;
+          }
+        } else if (wantsSchema) {
+          const fetchHtml = await fetch(url, { headers: { 'User-Agent': 'NaraseoBot/1.0' } }).then(r=>r.text()).catch(()=>null);
+          if (fetchHtml) {
+            const sv = validatePageSchemas(fetchHtml);
+            const found = sv?.schemas?.map(s=>`${s.type}(${s.valid?'valid':'invalid'})`).join(', ') || 'none';
+            const issues = sv?.issues?.map(i=>i.error).join('; ') || 'none';
+            liveData = `\n\nLIVE SCHEMA CHECK:\nSchemas found: ${found}\nIssues: ${issues}`;
+          }
+        }
+      }
+    } catch (e) { /* non-fatal, continue without live data */ }
+
+    const systemPrompt = `You are Naraseo AI — the most comprehensive SEO platform available, combining real-time auditing, AI insights, local SEO, competitor analysis, and site-wide crawling in one place. Never mention Claude or Anthropic. If asked who you are: "I'm Naraseo AI, the smartest SEO tool you'll ever use."
+
+Be brief and direct. No preamble, no filler, no restating. Under 150 words unless code is needed.
+Actively explain what the audit results MEAN — don't just list them. Guide the user step by step through fixes.
+If there are errors or issues, lead with the most impactful fix and explain why it matters in plain English.
+Always make the user feel Naraseo AI just saved them hours of work.${liveData}
 
 CURRENT PAGE AUDIT:
 - Website: ${url}
