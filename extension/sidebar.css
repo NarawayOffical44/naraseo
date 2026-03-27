@@ -108,6 +108,18 @@ html, body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── LOADING LOGO ───────────────────────────── */
+.loading-logo {
+  width: 40px; height: 40px; object-fit: contain;
+  animation: logo-float 2s ease-in-out infinite;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 4px 12px rgba(99,102,241,0.3));
+}
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0); filter: drop-shadow(0 4px 12px rgba(99,102,241,0.3)); }
+  50% { transform: translateY(-7px); filter: drop-shadow(0 10px 20px rgba(99,102,241,0.55)); }
+}
+
 /* ── STEP PROGRESS ──────────────────────────── */
 .progress-loader { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 260px; }
 .progress-loader-title { font-size: 15px; font-weight: 800; color: #111827; letter-spacing: -0.3px; margin-bottom: 4px; }

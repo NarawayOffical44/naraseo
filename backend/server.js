@@ -2282,14 +2282,14 @@ LOCAL SEO STATUS:
     let liveData = '';
 
     try {
-      // Extract any URL the user mentions in their message
-      const urlMatch = message.match(/https?:\/\/[^\s"']+|(?:^|\s)([\w-]+\.[\w]{2,}(?:\/[^\s]*)?)/i);
-      const mentionedUrl = urlMatch ? (urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[1]}`) : null;
+      // Extract any URL the user mentions — handles http://x.y.z and bare domains like site.com
+      const urlMatch = message.match(/https?:\/\/[^\s"'<>]+|((?:[\w-]+\.)+(?:com|net|org|io|ai|app|dev|co|uk|in|me|xyz|site|online|store))(?=[\/\s"'<>]|$)/i);
+      const mentionedUrl = urlMatch ? (urlMatch[0].startsWith('http') ? urlMatch[0].replace(/[.,;]+$/, '') : `https://${urlMatch[0].replace(/[.,;]+$/, '')}`) : null;
       const targetUrl = mentionedUrl || url;
 
       const wantsKeywords = /keyword|keyw|what (should|to) rank|search term|content gap|rank for/i.test(msgLower);
       const wantsSchema = /schema|structured data|rich result|json.?ld|markup/i.test(msgLower);
-      const wantsAudit = /run|audit|analyze|check|scan|score|look at|review/i.test(msgLower) && (mentionedUrl || /audit|scan|analyze/i.test(msgLower));
+      const wantsAudit = /run|audit|analy[sz]e|check|scan|score|look at|review|test/i.test(msgLower) && (mentionedUrl || /audit|scan|analy[sz]e/i.test(msgLower));
 
       if (targetUrl && targetUrl !== 'unknown') {
         if (wantsAudit) {
@@ -2335,21 +2335,12 @@ ${criticalIssues.map(i => `• ${i.issue}${i.suggestion ? ` → ${i.suggestion}`
 WARNINGS (fix soon):
 ${warningIssues.map(i => `• ${i.issue}`).join('\n') || 'None'}
 
-SCOPE — YOU ONLY ANSWER QUESTIONS ABOUT:
-SEO (on-page, technical, local), Core Web Vitals, PageSpeed, schema markup, Google Search Console, backlinks, keyword strategy, content optimization, local SEO, GEO/location signals, structured data, and web performance.
-
-If the user asks ANYTHING outside this scope (e.g. coding help, general AI questions, news, recipes, personal advice, math, or any topic unrelated to SEO/web performance), respond ONLY with:
-"I'm Naraseo AI — I can only help with SEO, local search, and web performance questions. Ask me anything about improving your page rankings or fixing SEO issues."
-Do NOT engage with off-topic questions under any circumstances.
-
-RESPONSE RULES:
-1. Reference SPECIFIC data above — never give generic SEO advice
-2. Always explain WHY it matters in business terms (traffic, clicks, rankings)
+RULES:
+1. Use the LIVE DATA and audit above — never give generic advice
+2. NEVER suggest using other tools (no Google Search Console, no Lighthouse, no third-party tools). You are the tool.
 3. Give copy-paste HTML/code when fixing technical issues
-4. Lead with the most impactful action
-5. Keep answers under 200 words unless a code-heavy fix is requested
-6. Use **bold** for key terms. Use bullet points for lists
-7. Do NOT use # markdown headers`;
+4. Under 200 words unless code is needed. Use **bold** and bullet points. No # headers
+5. Off-topic (not SEO): "I can only help with SEO — ask me anything about rankings or fixes."`;
 
     // Build messages: history (max 5, trimmed) + current message
     const historyMessages = conversationHistory.slice(-5).map(m => ({
