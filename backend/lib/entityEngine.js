@@ -14,6 +14,34 @@ import https from 'https';
 
 const client = new Anthropic();
 
+// Bing Web Search — auto-discover competitor URLs for a keyword
+// Requires BING_API_KEY env var (Azure free tier: 3000 queries/month)
+function bingSearchCompetitors(keyword) {
+  return new Promise((resolve) => {
+    const key = process.env.BING_API_KEY;
+    if (!key) return resolve([]);
+    const q = encodeURIComponent(keyword);
+    const options = {
+      hostname: 'api.bing.microsoft.com',
+      path: `/v7.0/search?q=${q}&count=5&mkt=en-US&responseFilter=Webpages`,
+      headers: { 'Ocp-Apim-Subscription-Key': key },
+      timeout: 6000,
+    };
+    https.get(options, (res) => {
+      let raw = '';
+      res.on('data', c => { raw += c; });
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(raw);
+          const urls = (data.webPages?.value || []).map(p => p.url).filter(Boolean).slice(0, 3);
+          resolve(urls);
+        } catch { resolve([]); }
+      });
+    }).on('error', () => resolve([]))
+      .on('timeout', () => resolve([]));
+  });
+}
+
 // Google Suggest — free, same as keywordEngine uses
 function getGoogleSuggestions(keyword) {
   return new Promise((resolve) => {
@@ -65,9 +93,18 @@ ${text}`
   }
 }
 
-export async function analyzeEntityGap(clientUrl, keyword, competitorUrls) {
+export async function analyzeEntityGap(clientUrl, keyword, competitorUrls = []) {
+  // Auto-discover competitors via Bing if none provided
+  let resolvedCompetitors = competitorUrls.slice(0, 3);
+  if (resolvedCompetitors.length === 0) {
+    resolvedCompetitors = await bingSearchCompetitors(keyword);
+    if (resolvedCompetitors.length === 0) {
+      throw new Error('No competitor URLs provided and Bing auto-discovery is not configured (set BING_API_KEY). Pass competitorUrls manually.');
+    }
+  }
+
   // Fetch all pages in parallel
-  const allUrls = [clientUrl, ...competitorUrls.slice(0, 3)];
+  const allUrls = [clientUrl, ...resolvedCompetitors];
   const fetched = await Promise.allSettled(allUrls.map(u => fetchURL(u).catch(() => null)));
 
   const pages = fetched.map((r, i) => ({

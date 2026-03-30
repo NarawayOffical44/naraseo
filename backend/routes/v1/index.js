@@ -19,6 +19,7 @@ import reportRouter from './report.js';
 import deployRouter from './deploy.js';
 import verifyRouter from './verify.js';
 import entityGapRouter from './entityGap.js';
+import riskRouter from './risk.js';
 import { openapiSpec } from './openapi.js';
 
 const router = express.Router();
@@ -26,6 +27,7 @@ const router = express.Router();
 // Mount all sub-routers
 router.use('/verify', verifyRouter);
 router.use('/entity-gap', entityGapRouter);
+router.use('/audit/risk', riskRouter);
 router.use('/solve', solveRouter);
 router.use('/solve-site', solveSiteRouter);
 router.use('/audit', auditRouter);
@@ -87,6 +89,7 @@ router.get('/', (req, res) => {
         'POST /api/v1/fixes',
         'POST /api/v1/verify        ← hallucination detection + E-E-A-T scoring for AI content',
         'POST /api/v1/entity-gap   ← information gain: what entities competitors have that you lack',
+        'POST /api/v1/audit/risk   ← hallucination risk audit: publishable verdict + legal risk signals',
         'GET  /api/v1/health',
         'GET  /api/v1/openapi.json',
       ],

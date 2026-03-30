@@ -404,6 +404,62 @@ Capabilities:
         responses: { '200': { description: 'HTML fix with explanation and impact' } },
       },
     },
+    '/api/v1/audit/risk': {
+      post: {
+        operationId: 'auditRisk',
+        summary: 'Hallucination risk audit — publishable verdict for AI-generated content',
+        description: 'Scans content for high-stakes factual risks before publishing. Detects unverifiable claims, industry-specific legal risk signals (medical dosages, financial guarantees, legal outcomes), and E-E-A-T weaknesses. Returns a clear publishable: true/false verdict with specific fixes. Industry is auto-detected if not provided.',
+        tags: ['Intelligence'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  content: { type: 'string', minLength: 30, maxLength: 15000, description: 'Text content to audit — AI-generated copy, article, landing page text' },
+                  url: { type: 'string', format: 'uri', description: 'Fetch content from URL instead of passing text directly' },
+                  industry: { type: 'string', enum: ['medical', 'legal', 'financial', 'general'], description: 'Industry context for risk weighting. Auto-detected if omitted.' },
+                },
+              },
+              example: {
+                content: 'This treatment requires 500mg of compound X daily. Clinically proven to cure symptoms in 30 days. No side effects reported.',
+                industry: 'medical',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Risk audit result with publishable verdict, legal signals, and fixes',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        publishable: { type: 'boolean', description: 'True = safe to publish. False = fix required.' },
+                        risk_level: { type: 'string', enum: ['safe', 'review_required', 'do_not_publish'] },
+                        risk_score: { type: 'integer', description: '0-100. Higher = more risky.' },
+                        industry_detected: { type: 'string' },
+                        verdict_text: { type: 'string', description: 'Plain-English verdict for the agency' },
+                        legal_risk_signals: { type: 'array', items: { type: 'object', properties: { type: { type: 'string' }, text: { type: 'string' }, severity: { type: 'string', enum: ['critical', 'high', 'medium', 'low'] }, context: { type: 'string' } } } },
+                        fix_before_publishing: { type: 'array', items: { type: 'string' }, description: 'Specific actions to take before this content is published' },
+                        eeat: { type: 'object', properties: { score: { type: 'integer' }, grade: { type: 'string' } } },
+                        summary: { type: 'object', properties: { total_claims: { type: 'integer' }, flagged_claims: { type: 'integer' }, critical_signals: { type: 'integer' } } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/v1/verify': {
       post: {
         operationId: 'verifyContent',
@@ -466,7 +522,7 @@ Capabilities:
       post: {
         operationId: 'analyzeEntityGap',
         summary: 'Information gain analysis — what topics competitors cover that you are missing',
-        description: 'Uses NLP to extract named entities and concepts from your page and competitor pages. Returns missing entities ranked by how many competitors cover them, your unique advantages, and an information_gain_score. Use this to close topical authority gaps before publishing or optimising content.',
+        description: 'Uses NLP to extract named entities and concepts from your page and competitor pages. Returns missing entities ranked by how many competitors cover them, your unique advantages, and an information_gain_score. competitorUrls is optional — if omitted and BING_API_KEY is configured, competitors are auto-discovered from the keyword.',
         tags: ['Intelligence'],
         requestBody: {
           required: true,
@@ -474,7 +530,7 @@ Capabilities:
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['url', 'keyword', 'competitorUrls'],
+                required: ['url', 'keyword'],
                 properties: {
                   url: { type: 'string', format: 'uri', description: 'Your page URL' },
                   keyword: { type: 'string', description: 'Target keyword you want to rank for' },

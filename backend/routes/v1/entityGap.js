@@ -16,20 +16,22 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
 
   if (!url) return sendApiError(res, 'MISSING_URL', 'url required', 400);
   if (!keyword) return sendApiError(res, 'MISSING_KEYWORD', 'keyword required', 400);
+
+  // competitorUrls is optional — if omitted, Bing auto-discovers (requires BING_API_KEY env var)
+  const hasBing = !!process.env.BING_API_KEY;
   if (!Array.isArray(competitorUrls) || competitorUrls.length === 0) {
-    return sendApiError(res, 'MISSING_COMPETITORS', 'competitorUrls array required (1-3 URLs)', 400, {
-      tip: 'Pass your top 1-3 competitor URLs for this keyword. Find them by Googling your target keyword.',
-      example: {
-        url: 'https://yoursite.com/page',
-        keyword: 'best seo tools 2025',
-        competitorUrls: ['https://competitor1.com', 'https://competitor2.com']
-      }
-    });
+    if (!hasBing) {
+      return sendApiError(res, 'MISSING_COMPETITORS', 'competitorUrls required (BING_API_KEY not configured for auto-discovery)', 400, {
+        tip: 'Pass 1-3 competitor URLs, or configure BING_API_KEY for automatic competitor discovery.',
+        example: { url: 'https://yoursite.com/page', keyword: 'best seo tools 2025', competitorUrls: ['https://competitor1.com'] },
+      });
+    }
+    // Bing will auto-discover — proceed with empty array
   }
 
   try {
     new URL(url);
-    competitorUrls.forEach(u => new URL(u));
+    (competitorUrls || []).forEach(u => new URL(u));
   } catch {
     return sendApiError(res, 'INVALID_URL', 'Invalid URL format', 400);
   }
@@ -50,6 +52,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       meta: {
         processingMs: Date.now() - startTime,
         creditsUsed: 1,
+        competitor_discovery: competitorUrls?.length > 0 ? 'manual' : 'bing_auto',
         note: 'Entity extraction uses Claude Haiku NLP on live page content',
       },
     });
