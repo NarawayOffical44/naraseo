@@ -315,6 +315,13 @@
     </div>
 
     <div class="sidebar-section">
+      <div class="sidebar-title">AI Verification</div>
+      <div class="sidebar-link" onclick="showSection('verify')">Verify Content</div>
+      <div class="sidebar-link" onclick="showSection('risk')">Risk Audit</div>
+      <div class="sidebar-link" onclick="showSection('entity-gap')">Entity Gap</div>
+    </div>
+
+    <div class="sidebar-section">
       <div class="sidebar-title">Advanced</div>
       <div class="sidebar-link" onclick="showSection('mcp')">MCP Server</div>
       <div class="sidebar-link" onclick="showSection('errors')">Error Handling</div>
@@ -1021,6 +1028,207 @@ print(f"\nContent Gaps: {', '.join(keywords['aiAnalysis']['contentGaps'])}")</di
 }
 
 downloadReport('https://example.com', 'YOUR_API_KEY');</div>
+    </section>
+
+    <!-- VERIFY -->
+    <section id="verify" class="doc-section">
+      <h1>Verify Content</h1>
+      <p>Detect hallucinations in AI-generated or human content before you publish. Returns flagged claims, a verifiable verdict, E-E-A-T scoring, and a <strong>Certificate of Accuracy</strong> you can share as proof.</p>
+
+      <div class="note" style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.25)">
+        <strong>The trust mechanism:</strong> When a claim contradicts our source data, we return <code>correct_value</code> — the actual correct fact. Your user checks it and finds we were right. That's the moment they trust the product.
+      </div>
+
+      <div class="endpoint">
+        <div style="margin-bottom:12px">
+          <span class="method-badge method-post">POST</span>
+          <code>/api/v1/verify</code>
+        </div>
+        <p>Verify AI-generated or human content for factual accuracy and E-E-A-T signals.</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "content": "OpenAI was founded in 2015. The treatment requires 500mg daily for 30 days.",
+  "url": "https://yoursite.com/article"   // optional — for the certificate record
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "certificate_id": "cert_a1b2c3d4",
+    "certificate_url": "https://naraseoai.onrender.com/api/v1/verify/cert_a1b2c3d4",
+    "summary": {
+      "total_claims": 8,
+      "flagged": 2,
+      "safe": 6,
+      "risk_score": 25,
+      "verdict": "review_needed"   // clean | review_needed | high_risk
+    },
+    "eeat": {
+      "score": 40,
+      "grade": "moderate",
+      "missing": ["hasAuthorMention", "hasCitations"]
+    },
+    "flagged_claims": [
+      {
+        "claim": "treatment requires 500mg daily for 30 days",
+        "status": "contradicted",
+        "risk": "high",
+        "correct_value": "Dosage varies by patient weight and condition — no standard universal dose",
+        "source": "Wikipedia: Pharmacology",
+        "reason": "Specific dosage claim with no citation — high liability risk"
+      }
+    ]
+  }
+}</div>
+
+      <h2>Retrieve a Certificate</h2>
+      <div class="endpoint">
+        <span class="method-badge" style="background:#22c55e">GET</span>
+        <code>/api/v1/verify/:certificate_id</code>
+      </div>
+      <p>Share this URL with clients as proof content was verified before publishing.</p>
+
+      <h2>JavaScript Example</h2>
+      <div class="code-block">const res = await fetch('https://naraseoai.onrender.com/api/v1/verify', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ content: articleText })
+});
+const { data } = await res.json();
+
+if (!data.summary.verdict === 'clean') {
+  console.log('Issues found:', data.flagged_claims);
+  // Each flagged claim has: claim, status, correct_value, reason
+}
+
+// Share the certificate with your client
+console.log('Verified at:', data.certificate_url);</div>
+    </section>
+
+    <!-- RISK AUDIT -->
+    <section id="risk" class="doc-section">
+      <h1>Risk Audit</h1>
+      <p>Industry-aware hallucination risk audit. Detects medical dosages, financial return guarantees, and legal liability claims — the things that get agencies sued. Returns a <code>publishable</code> boolean your pipeline can act on immediately.</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom:12px">
+          <span class="method-badge method-post">POST</span>
+          <code>/api/v1/audit/risk</code>
+        </div>
+        <p>Scan content for legal risk signals before publishing. Auto-detects industry if not specified.</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "content": "The current interest rate is 4%. This treatment cures diabetes in 30 days.",
+  "industry": "medical"   // optional: medical | legal | financial | general (auto-detected if omitted)
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "publishable": false,
+    "risk_level": "do_not_publish",   // safe | review_required | do_not_publish
+    "risk_score": 75,
+    "industry_detected": "medical",
+    "verdict_text": "1 critical risk signal detected (medical domain). Do not publish without compliance review.",
+    "legal_risk_signals": [
+      {
+        "type": "Treatment or cure claim",
+        "text": "cures diabetes in 30 days",
+        "severity": "critical",
+        "context": "...This treatment cures diabetes in 30 days without..."
+      }
+    ],
+    "fix_before_publishing": [
+      "REMOVE or get legal sign-off: 'cures diabetes in 30 days' — Treatment or cure claim"
+    ]
+  }
+}</div>
+
+      <h2>Pipeline Example</h2>
+      <div class="code-block">// Run before every publish in your AI content pipeline
+async function safeToPublish(content, industry) {
+  const res = await fetch('https://naraseoai.onrender.com/api/v1/audit/risk', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, industry })
+  });
+  const { data } = await res.json();
+
+  if (!data.publishable) {
+    throw new Error(`Do not publish: ${data.verdict_text}`);
+  }
+  return true; // safe to publish
+}</div>
+    </section>
+
+    <!-- ENTITY GAP -->
+    <section id="entity-gap" class="doc-section">
+      <h1>Entity Gap Analysis</h1>
+      <p>Find what topics and entities your competitors cover that your page is missing. Claude extracts named entities from each page, computes the gap, and returns an <code>information_gain_score</code>. Low score = content won't rank because it's missing what top pages have.</p>
+
+      <div class="endpoint">
+        <div style="margin-bottom:12px">
+          <span class="method-badge method-post">POST</span>
+          <code>/api/v1/entity-gap</code>
+        </div>
+        <p>Compare your page against competitors and find the missing entities blocking you from ranking.</p>
+      </div>
+
+      <h2>Request</h2>
+      <div class="code-block">{
+  "url": "https://yoursite.com/page",
+  "keyword": "best seo tools 2025",
+  "competitorUrls": [                  // optional — auto-discovers via Bing if omitted
+    "https://competitor1.com/page",
+    "https://competitor2.com/page"
+  ]
+}</div>
+
+      <h2>Response</h2>
+      <div class="code-block">{
+  "success": true,
+  "data": {
+    "information_gain_score": 42,   // 0-100, higher = more complete
+    "verdict": "significant_gaps",  // competitive | gaps_found | significant_gaps
+    "action": "Add these 3 critical entities to rank competitively: Core Web Vitals, PageSpeed Insights, Lighthouse",
+    "entity_gaps": [
+      {
+        "entity": "Core Web Vitals",
+        "missing_from_client": true,
+        "competitor_coverage": "3/3 competitors",
+        "priority": "critical"
+      },
+      {
+        "entity": "PageSpeed Insights",
+        "missing_from_client": true,
+        "competitor_coverage": "2/3 competitors",
+        "priority": "recommended"
+      }
+    ],
+    "client_advantages": ["Proprietary scoring algorithm", "Real-time data"],
+    "related_searches": ["seo audit tool", "website speed checker", "google seo tools"]
+  }
+}</div>
+
+      <h2>JavaScript Example</h2>
+      <div class="code-block">const res = await fetch('https://naraseoai.onrender.com/api/v1/entity-gap', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    url: 'https://yoursite.com/blog-post',
+    keyword: 'seo best practices 2025'
+    // competitorUrls omitted — auto-discovers top 3 results for the keyword
+  })
+});
+const { data } = await res.json();
+console.log(`Information gain score: ${data.information_gain_score}/100`);
+console.log('Missing entities:', data.entity_gaps.filter(e => e.priority === 'critical'));</div>
     </section>
 
     <!-- MCP SERVER -->
