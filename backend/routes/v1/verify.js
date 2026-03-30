@@ -1,11 +1,13 @@
 /**
  * Verify Route - POST /api/v1/verify
- * Hallucination detection + E-E-A-T scoring for AI-generated content
+ * Hallucination detection + E-E-A-T scoring for AI-generated content.
+ * Every verification is logged as a Certificate of Accuracy (retrievable by ID).
  */
 
 import express from 'express';
 import { verifyClaims } from '../../lib/verifyEngine.js';
-import { featureAccess, creditCheck, sendApiResponse, sendApiError } from '../../middleware/apiKey.js';
+import { saveVerification, getVerification } from '../../lib/history.js';
+import { featureAccess, creditCheck, sendApiError } from '../../middleware/apiKey.js';
 import supabase from '../../supabase.js';
 import crypto from 'crypto';
 
@@ -33,12 +35,31 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
     const startTime = Date.now();
     const result = await verifyClaims(content);
 
+    const certificateId = `cert_${crypto.randomBytes(8).toString('hex')}`;
+    const contentHash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+
+    // Save certificate (fire-and-forget)
+    saveVerification(supabase, {
+      id: certificateId,
+      contentHash,
+      userId: req.user?.id,
+      verdict: result.summary.verdict,
+      publishable: result.summary.verdict === 'clean',
+      riskLevel: null,
+      flaggedCount: result.summary.flagged,
+      eeatScore: result.eeat?.score,
+      resultJson: result,
+      sourceUrl: url || null,
+    }).catch(() => {});
+
     if (req.deductCredit) req.deductCredit().catch(() => {});
 
     return res.status(200).json({
       success: true,
       data: {
-        id: `verify_${crypto.randomBytes(6).toString('hex')}`,
+        certificate_id: certificateId,
+        certificate_url: `${req.protocol}://${req.get('host')}/api/v1/verify/${certificateId}`,
+        content_hash: contentHash,
         url: url || null,
         ...result,
         analyzedAt: new Date().toISOString(),
@@ -46,13 +67,38 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       meta: {
         processingMs: Date.now() - startTime,
         creditsUsed: 1,
-        model: 'claude-haiku + wikipedia',
+        note: 'Certificate of Accuracy — share certificate_id or certificate_url as proof this content was verified.',
       },
     });
   } catch (error) {
     console.error('Verify error:', error);
     return sendApiError(res, 'VERIFY_FAILED', error.message, 500);
   }
+});
+
+// GET /api/v1/verify/:id — retrieve a Certificate of Accuracy by ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!id.startsWith('cert_')) {
+    return sendApiError(res, 'INVALID_ID', 'Certificate ID must start with cert_', 400);
+  }
+  const record = await getVerification(supabase, id);
+  if (!record) return sendApiError(res, 'NOT_FOUND', 'Certificate not found', 404);
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      certificate_id: record.id,
+      content_hash: record.content_hash,
+      verdict: record.verdict,
+      publishable: record.publishable,
+      flagged_claims: record.flagged_count,
+      eeat_score: record.eeat_score,
+      source_url: record.source_url,
+      verified_at: record.created_at,
+      full_report: record.result_json,
+    },
+  });
 });
 
 export default router;

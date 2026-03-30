@@ -96,6 +96,74 @@ export async function getAuditHistory(supabase, url, limit = 20) {
 }
 
 /**
+ * Save a verification result as a Certificate of Accuracy.
+ *
+ * Table required (create in Supabase SQL editor):
+ *   create table if not exists verifications (
+ *     id text primary key,
+ *     content_hash text not null,
+ *     user_id text,
+ *     verdict text,
+ *     publishable boolean,
+ *     risk_level text,
+ *     flagged_count int,
+ *     eeat_score int,
+ *     result_json jsonb,
+ *     source_url text,
+ *     created_at timestamptz default now()
+ *   );
+ */
+export async function saveVerification(supabase, { id, contentHash, userId, verdict, publishable, riskLevel, flaggedCount, eeatScore, resultJson, sourceUrl }) {
+  if (!supabase) return null;
+  try {
+    const { data: row, error } = await supabase
+      .from('verifications')
+      .insert({
+        id,
+        content_hash: contentHash,
+        user_id: userId || null,
+        verdict,
+        publishable: publishable ?? null,
+        risk_level: riskLevel || null,
+        flagged_count: flaggedCount ?? 0,
+        eeat_score: eeatScore ?? null,
+        result_json: resultJson,
+        source_url: sourceUrl || null,
+      })
+      .select()
+      .single();
+    if (error) {
+      if (error.code !== 'PGRST116' && error.code !== '42P01') {
+        console.error('[history] saveVerification error:', error.message);
+      }
+      return null;
+    }
+    return row;
+  } catch (e) {
+    console.error('[history] saveVerification exception:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Retrieve a verification certificate by ID.
+ */
+export async function getVerification(supabase, id) {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('verifications')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Save a geo-grid rank snapshot.
  */
 export async function saveRankSnapshot(supabase, { url, keyword, userId, avgRank, coverage, gridSize, points }) {
