@@ -309,11 +309,134 @@ function calculateScore(pageData) {
   return { score: Math.min(100, score), issues };
 }
 
+// Generate actionable JSON fix payloads from issues + pageData
+function generateFixes(pageData, issues) {
+  const fixes = [];
+
+  for (const issue of issues) {
+    switch (issue.id) {
+      case 'missing-title':
+        fixes.push({
+          action: 'add_title',
+          field: 'title',
+          current: null,
+          suggested: `${pageData.h1[0] || 'Page Title'} | Your Brand`,
+          code: `<title>${pageData.h1[0] || 'Page Title'} | Your Brand</title>`,
+          reason: 'Missing title tag. Search engines use this as the primary ranking signal.',
+          impact: 'critical'
+        });
+        break;
+      case 'short-title':
+        fixes.push({
+          action: 'update_title',
+          field: 'title',
+          current: pageData.title,
+          suggested: `${pageData.title} | Add keywords here (target 50-60 chars)`,
+          code: `<title>${pageData.title} | Add keywords here</title>`,
+          reason: `Title is ${pageData.title.length} chars. Expand to 50-60 chars with target keyword.`,
+          impact: 'warning'
+        });
+        break;
+      case 'long-title':
+        fixes.push({
+          action: 'update_title',
+          field: 'title',
+          current: pageData.title,
+          suggested: pageData.title.substring(0, 57) + '...',
+          code: `<title>${pageData.title.substring(0, 57)}...</title>`,
+          reason: `Title is ${pageData.title.length} chars. Truncate to under 60 chars to avoid cutoff in SERPs.`,
+          impact: 'warning'
+        });
+        break;
+      case 'missing-meta-description':
+        fixes.push({
+          action: 'add_meta_description',
+          field: 'meta_description',
+          current: null,
+          suggested: `Describe this page in 120-160 chars. Include your main keyword and a clear call to action.`,
+          code: `<meta name="description" content="Describe this page in 120-160 chars. Include your main keyword.">`,
+          reason: 'Missing meta description reduces click-through rate from search results.',
+          impact: 'critical'
+        });
+        break;
+      case 'short-description':
+        fixes.push({
+          action: 'update_meta_description',
+          field: 'meta_description',
+          current: pageData.metaDescription,
+          suggested: `${pageData.metaDescription} Add more detail and a call to action to reach 120-160 chars.`,
+          code: `<meta name="description" content="${pageData.metaDescription} Add more detail here.">`,
+          reason: `Meta description is ${pageData.metaDescription.length} chars. Expand to 120-160 chars.`,
+          impact: 'warning'
+        });
+        break;
+      case 'missing-h1':
+        fixes.push({
+          action: 'add_h1',
+          field: 'h1',
+          current: null,
+          suggested: pageData.title || 'Add your primary keyword as H1',
+          code: `<h1>${pageData.title || 'Add your primary keyword as H1'}</h1>`,
+          reason: 'No H1 tag found. Every page needs exactly one H1 with the primary keyword.',
+          impact: 'critical'
+        });
+        break;
+      case 'multiple-h1':
+        fixes.push({
+          action: 'remove_duplicate_h1',
+          field: 'h1',
+          current: pageData.h1,
+          suggested: pageData.h1[0],
+          reason: `Found ${pageData.h1.length} H1 tags. Keep only the first, change others to H2.`,
+          impact: 'warning'
+        });
+        break;
+      case 'missing-alt-text': {
+        const missingAlt = pageData.images.filter(img => !img.hasAlt).map(img => img.src).slice(0, 5);
+        fixes.push({
+          action: 'add_alt_text',
+          field: 'img_alt',
+          current: missingAlt,
+          suggested: missingAlt.map(src => ({ src, alt: 'Describe this image with keywords' })),
+          code: missingAlt.map(src => `<img src="${src}" alt="Describe this image">`).join('\n'),
+          reason: `${pageData.images.filter(img => !img.hasAlt).length} images missing alt text. Required for accessibility and image SEO.`,
+          impact: issue.type
+        });
+        break;
+      }
+      case 'missing-viewport':
+        fixes.push({
+          action: 'add_viewport',
+          field: 'viewport',
+          current: null,
+          suggested: 'width=device-width, initial-scale=1',
+          code: `<meta name="viewport" content="width=device-width, initial-scale=1">`,
+          reason: 'Missing viewport meta tag. Required for mobile-friendly ranking.',
+          impact: 'critical'
+        });
+        break;
+      case 'low-word-count':
+        fixes.push({
+          action: 'expand_content',
+          field: 'word_count',
+          current: pageData.wordCount,
+          target: 300,
+          reason: `Page has ${pageData.wordCount} words. Add at least ${300 - pageData.wordCount} more words. Thin content ranks poorly.`,
+          impact: 'warning'
+        });
+        break;
+    }
+  }
+
+  return fixes;
+}
+
 export async function auditPage(url) {
   try {
     const html = await fetchURL(url);
     const pageData = parseHTML(html);
     const { score, issues } = calculateScore(pageData);
+    const fixes = generateFixes(pageData, issues);
 
     return {
       success: true,
@@ -324,6 +447,7 @@ export async function auditPage(url) {
         grade: score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F',
         pageData,
         issues,
+        fixes,
         analyzedAt: new Date().toISOString(),
       },
     };
