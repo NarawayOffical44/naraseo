@@ -309,6 +309,127 @@ function calculateScore(pageData) {
   return { score: Math.min(100, score), issues };
 }
 
+// GEO Readiness — how ready is this page for AI citations (Perplexity, ChatGPT, AI Overviews)
+function calculateGEOReadiness(pageData, html) {
+  const signals = [];
+  const fixes = [];
+  let score = 0;
+
+  // 1. FAQ Schema (20pts) — AI models love structured Q&A
+  const hasFAQSchema = pageData.jsonLD.some(s => s['@type'] === 'FAQPage');
+  if (hasFAQSchema) {
+    score += 20;
+    signals.push({ signal: 'faq_schema', status: 'present', points: 20 });
+  } else {
+    signals.push({ signal: 'faq_schema', status: 'missing', points: 0 });
+    fixes.push({
+      action: 'add_faq_schema',
+      priority: 'high',
+      reason: 'FAQPage schema is the #1 signal for AI Overview inclusion. Add Q&A pairs as JSON-LD.',
+      code: '{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Your question?","acceptedAnswer":{"@type":"Answer","text":"Your answer."}}]}'
+    });
+  }
+
+  // 2. Question-format headings (15pts) — H2/H3 starting with Who/What/When/Where/Why/How
+  const questionHeadings = [...(pageData.h2 || []), ...(pageData.h3 || [])]
+    .filter(h => /^(who|what|when|where|why|how|is|are|can|does|do|should|will)\b/i.test(h.trim()));
+  if (questionHeadings.length >= 2) {
+    score += 15;
+    signals.push({ signal: 'question_headings', status: 'present', count: questionHeadings.length, points: 15 });
+  } else {
+    signals.push({ signal: 'question_headings', status: questionHeadings.length === 1 ? 'partial' : 'missing', count: questionHeadings.length, points: 0 });
+    fixes.push({
+      action: 'add_question_headings',
+      priority: 'high',
+      reason: 'AI models scan for question-formatted headings to find direct answers. Add H2/H3 headings starting with What/How/Why.',
+      example: 'Change "Benefits of X" → "What Are the Benefits of X?"'
+    });
+  }
+
+  // 3. Direct answer in first 100 words (15pts)
+  const firstWords = html ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 100).join(' ') : '';
+  const hasDirectAnswer = firstWords.length > 50;
+  if (hasDirectAnswer) {
+    score += 15;
+    signals.push({ signal: 'direct_answer_intro', status: 'present', points: 15 });
+  } else {
+    signals.push({ signal: 'direct_answer_intro', status: 'missing', points: 0 });
+    fixes.push({
+      action: 'add_direct_answer',
+      priority: 'medium',
+      reason: 'AI Overviews pull from the first paragraph. Lead with a clear, direct answer to the main topic.',
+    });
+  }
+
+  // 4. Citation signals (15pts) — "according to", source references, statistics
+  const hasCitations = /according to|source:|study|research|published|cited|data shows|survey/i.test(html || '');
+  if (hasCitations) {
+    score += 15;
+    signals.push({ signal: 'citation_signals', status: 'present', points: 15 });
+  } else {
+    signals.push({ signal: 'citation_signals', status: 'missing', points: 0 });
+    fixes.push({
+      action: 'add_citations',
+      priority: 'medium',
+      reason: 'AI models prefer content that cites sources. Add "According to [Source]..." or link to authoritative references.',
+    });
+  }
+
+  // 5. HowTo or Article schema (10pts)
+  const hasStructuredSchema = pageData.jsonLD.some(s => ['HowTo', 'Article', 'NewsArticle', 'BlogPosting'].includes(s['@type']));
+  if (hasStructuredSchema) {
+    score += 10;
+    signals.push({ signal: 'structured_schema', status: 'present', points: 10 });
+  } else {
+    signals.push({ signal: 'structured_schema', status: 'missing', points: 0 });
+    fixes.push({
+      action: 'add_article_schema',
+      priority: 'medium',
+      reason: 'Article or HowTo schema helps AI understand content structure and increases citation likelihood.',
+    });
+  }
+
+  // 6. Author/date signals (10pts) — E-E-A-T
+  const hasAuthor = /author|written by|by [A-Z]/i.test(html || '');
+  const hasDate = /\b(202[3-9]|203[0-9])\b/.test(html || '');
+  if (hasAuthor && hasDate) {
+    score += 10;
+    signals.push({ signal: 'eeat_authorship', status: 'present', points: 10 });
+  } else {
+    signals.push({ signal: 'eeat_authorship', status: 'partial', points: 0 });
+    fixes.push({
+      action: 'add_authorship',
+      priority: 'low',
+      reason: 'E-E-A-T signals (author name + publish date) increase trust for AI citations, especially in YMYL topics.',
+    });
+  }
+
+  // 7. Word count sufficient (15pts) — thin content rarely cited
+  if (pageData.wordCount >= 600) {
+    score += 15;
+    signals.push({ signal: 'content_depth', status: 'present', words: pageData.wordCount, points: 15 });
+  } else {
+    signals.push({ signal: 'content_depth', status: pageData.wordCount >= 300 ? 'partial' : 'missing', words: pageData.wordCount, points: 0 });
+    if (pageData.wordCount < 600) {
+      fixes.push({
+        action: 'expand_content',
+        priority: 'high',
+        reason: `${pageData.wordCount} words is too thin for AI citation. Target 600+ words with specific, factual content.`,
+        current_words: pageData.wordCount,
+        target_words: 600,
+      });
+    }
+  }
+
+  return {
+    geo_score: Math.min(100, score),
+    geo_grade: score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D',
+    geo_verdict: score >= 70 ? 'citation_ready' : score >= 40 ? 'needs_improvement' : 'not_citation_ready',
+    signals,
+    geo_fixes: fixes,
+  };
+}
+
 // Generate actionable JSON fix payloads from issues + pageData
 function generateFixes(pageData, issues) {
   const fixes = [];
@@ -437,6 +558,7 @@ export async function auditPage(url) {
     const pageData = parseHTML(html);
     const { score, issues } = calculateScore(pageData);
     const fixes = generateFixes(pageData, issues);
+    const geo = calculateGEOReadiness(pageData, html);
 
     return {
       success: true,
@@ -448,6 +570,7 @@ export async function auditPage(url) {
         pageData,
         issues,
         fixes,
+        ...geo,
         analyzedAt: new Date().toISOString(),
       },
     };

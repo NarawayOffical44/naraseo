@@ -72,7 +72,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       return sendApiError(res, 'AUDIT_FAILED', `Failed to audit page: ${auditResult.error}`, 500);
     }
 
-    const { score, grade, pageData, issues } = auditResult.data;
+    const { score, grade, pageData, issues, fixes, geo_score, geo_grade, geo_verdict, signals: geoSignals, geo_fixes } = auditResult.data;
     const fetchedHtml = auditResult.rawHtml;
     const isSPA = fetchedHtml ? seoEngine.detectSPA(fetchedHtml, pageData) : false;
 
@@ -217,6 +217,14 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       robots: {
         indexable: !pageData.robots || !pageData.robots.includes('noindex'),
         followable: !pageData.robots || !pageData.robots.includes('nofollow'),
+      },
+      fixes: fixes || [],
+      geo: {
+        score: geo_score ?? null,
+        grade: geo_grade ?? null,
+        verdict: geo_verdict ?? null,
+        signals: geoSignals ?? [],
+        fixes: geo_fixes ?? [],
       },
       createdAt: new Date().toISOString(),
     };
