@@ -21,12 +21,12 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
   const hasBing = !!process.env.BING_API_KEY;
   if (!Array.isArray(competitorUrls) || competitorUrls.length === 0) {
     if (!hasBing) {
-      return sendApiError(res, 'MISSING_COMPETITORS', 'competitorUrls required (BING_API_KEY not configured for auto-discovery)', 400, {
-        tip: 'Pass 1-3 competitor URLs, or configure BING_API_KEY for automatic competitor discovery.',
+      return sendApiError(res, 'MISSING_COMPETITORS', 'competitorUrls required when auto-discovery is not configured', 400, {
+        tip: 'Pass 1-3 competitor URLs to compare against.',
         example: { url: 'https://yoursite.com/page', keyword: 'best seo tools 2025', competitorUrls: ['https://competitor1.com'] },
       });
     }
-    // Bing will auto-discover — proceed with empty array
+    // auto-discover competitors — proceed with empty array
   }
 
   try {
@@ -52,8 +52,8 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       meta: {
         processingMs: Date.now() - startTime,
         creditsUsed: 1,
-        competitor_discovery: competitorUrls?.length > 0 ? 'manual' : 'bing_auto',
-        note: 'Entity extraction uses Claude Haiku NLP on live page content',
+        competitor_discovery: competitorUrls?.length > 0 ? 'manual' : 'auto',
+        note: 'Entity gap uses live page content analysis and semantic comparison across competitors',
       },
     });
   } catch (error) {

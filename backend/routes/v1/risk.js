@@ -72,7 +72,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       meta: {
         processingMs: Date.now() - startTime,
         creditsUsed: 1,
-        note: 'Claim extraction uses Claude Haiku + Wikipedia REST API. Pattern detection is deterministic.',
+        note: 'Risk audit combines factual claim analysis with industry-specific signal detection.',
       },
     });
   } catch (error) {

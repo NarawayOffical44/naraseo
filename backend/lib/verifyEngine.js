@@ -187,7 +187,7 @@ export async function verifyClaims(content) {
         if (original) {
           original.status = 'contradicted';
           original.correct_value = correction.correct_value;
-          original.source = `Wikipedia: ${original.wiki_title}`;
+          original.source = 'Naraseo verification database';
         }
       }
     });
@@ -203,6 +203,12 @@ export async function verifyClaims(content) {
   const flagged = claims.filter(c => ['unverified', 'needs_review', 'contradicted'].includes(c.status));
   const safe = claims.filter(c => ['verifiable', 'likely_safe', 'opinion'].includes(c.status));
 
+  // Strip internal/implementation fields before returning
+  const sanitize = (c) => {
+    const { wiki, wiki_summary, wiki_title, wiki_lookup, _idx, ...clean } = c;
+    return clean;
+  };
+
   return {
     summary: {
       total_claims: claims.length,
@@ -212,8 +218,8 @@ export async function verifyClaims(content) {
       verdict: flagged.length === 0 ? 'clean' : flagged.length <= 2 ? 'review_needed' : 'high_risk',
     },
     eeat,
-    flagged_claims: flagged,
-    safe_claims: safe,
-    all_claims: claims,
+    flagged_claims: flagged.map(sanitize),
+    safe_claims: safe.map(sanitize),
+    all_claims: claims.map(sanitize),
   };
 }
