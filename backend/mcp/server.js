@@ -15,6 +15,8 @@ import { crawlSite } from '../lib/crawlEngine.js';
 import { analyzeKeywords } from '../lib/keywordEngine.js';
 import { trackGeoGrid } from '../lib/geoEngine.js';
 import { validatePageSchemas } from '../lib/schemaValidator.js';
+import { verifyClaims } from '../lib/verifyEngine.js';
+import { analyzeEntityGap } from '../lib/entityEngine.js';
 
 const anthropic = new Anthropic();
 
@@ -31,7 +33,7 @@ export function createMcpServer() {
   // ── Tool 1: seo_audit ──────────────────────────────────────────────────────
   server.tool(
     'seo_audit',
-    'Full technical SEO audit of any URL. Returns score (0-100), grade (A-F), all issues with impact scores, and complete page data including title, meta, headings, images, links, schema, robots, canonical, and Open Graph.',
+    'Full technical SEO audit of any URL. Returns score (0-100), grade (A-F), all issues with impact scores, actionable fixes[] (copy-paste HTML code patches), GEO readiness score (0-100 for AI citation optimization), and complete page data including title, meta, headings, images, links, schema, robots, canonical, and Open Graph.',
     { url: z.string().url().describe('The page URL to audit') },
     async ({ url }) => {
       const result = await auditPage(url);
@@ -431,6 +433,43 @@ Generate a prioritised site-wide action plan as JSON: { summary, criticalSiteIss
           text: JSON.stringify({ url, pagesAudited: results.length, siteScore: avg, topIssues, ...plan }, null, 2),
         }],
       };
+    }
+  );
+
+  // ── Tool 11: verify_content ────────────────────────────────────────────────
+  server.tool(
+    'verify_content',
+    'Hallucination detection + E-E-A-T scoring for AI-generated or human-written content. Extracts factual claims, cross-checks each against Wikipedia, flags unverifiable statements, and scores authoritativeness signals (author bio, dates, citations, credentials). Essential before publishing AI content.',
+    {
+      content: z.string().min(50).max(10000)
+        .describe('The text content to verify — paste AI-generated copy, article draft, or any factual text'),
+      url: z.string().url().optional()
+        .describe('Optional source URL — if provided, fetches page content automatically'),
+    },
+    async ({ content, url }) => {
+      let textToVerify = content;
+      if (url && !content) {
+        const html = await fetchURL(url).catch(() => '');
+        textToVerify = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 10000);
+      }
+      const result = await verifyClaims(textToVerify);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // ── Tool 12: entity_gap ────────────────────────────────────────────────────
+  server.tool(
+    'entity_gap',
+    'Information gain analysis — finds what topics, entities, and concepts your competitors cover that your page is missing. Uses NLP to extract named entities from each page, then computes the gap. Returns missing entities ranked by competitor coverage frequency, your unique advantages, and an information_gain_score (0-100, higher = more complete). Critical for topical authority.',
+    {
+      url: z.string().url().describe('Your page URL to analyse'),
+      keyword: z.string().describe('Target keyword you are trying to rank for'),
+      competitorUrls: z.array(z.string().url()).min(1).max(3)
+        .describe('1-3 competitor URLs that rank for this keyword (find them by Googling the keyword)'),
+    },
+    async ({ url, keyword, competitorUrls }) => {
+      const result = await analyzeEntityGap(url, keyword, competitorUrls);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
 
