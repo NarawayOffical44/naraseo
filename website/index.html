@@ -842,6 +842,70 @@
       .footer-top { flex-direction: column; }
       .cta-inner { padding: 36px 24px; }
     }
+
+  /* ── Live Demo ──────────────────────────────────────────────────────────── */
+  .demo-section { padding: 72px 32px; background: var(--surface); }
+  .demo-inner { max-width: 860px; margin: 0 auto; }
+  .demo-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
+  .demo-title { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+  .demo-sub { color: var(--text-muted); margin-bottom: 28px; font-size: 15px; }
+  .demo-form { display: flex; gap: 10px; margin-bottom: 28px; }
+  .demo-input {
+    flex: 1; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .demo-input:focus { border-color: var(--primary); }
+  .demo-btn {
+    padding: 12px 24px; background: var(--primary); color: #fff; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; transition: background .2s, opacity .2s;
+  }
+  .demo-btn:hover { background: var(--primary-hover); }
+  .demo-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .demo-note { font-size: 12px; color: var(--text-muted); margin-top: -18px; margin-bottom: 24px; }
+
+  .demo-result { display: none; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .demo-result.visible { display: block; }
+  .demo-result-header { display: flex; align-items: center; gap: 20px; padding: 20px 24px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .demo-score-ring {
+    width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; flex-shrink: 0;
+    background: conic-gradient(var(--primary) calc(var(--pct, 0) * 1%), var(--border) 0);
+  }
+  .demo-score-ring span { background: var(--bg); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--text-primary); }
+  .demo-result-meta h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
+  .demo-result-meta p { font-size: 13px; color: var(--text-muted); margin: 0; }
+  .demo-grade { padding: 4px 10px; border-radius: 5px; font-size: 13px; font-weight: 700; margin-left: auto; }
+  .grade-a { background: rgba(34,197,94,.12); color: #22c55e; }
+  .grade-b { background: rgba(99,102,241,.12); color: #6366f1; }
+  .grade-c { background: rgba(234,179,8,.12); color: #eab308; }
+  .grade-d,.grade-f { background: rgba(239,68,68,.12); color: #ef4444; }
+
+  .demo-fixes { padding: 20px 24px; }
+  .demo-fixes h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 0 0 16px; }
+  .demo-fix { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .demo-fix-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg); }
+  .fix-impact { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  .fix-high { background: rgba(239,68,68,.12); color: #ef4444; }
+  .fix-medium { background: rgba(234,179,8,.12); color: #eab308; }
+  .fix-low { background: rgba(99,102,241,.12); color: #6366f1; }
+  .fix-issue { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .fix-where { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+  .demo-fix-code { background: #0d0d0d; padding: 12px 14px; font-size: 12px; font-family: monospace; color: #a5f3fc; overflow-x: auto; white-space: pre; line-height: 1.5; }
+  .demo-fix-why { padding: 8px 14px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); }
+  .demo-cta { padding: 16px 24px; background: var(--bg); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .demo-cta span { font-size: 13px; color: var(--text-muted); }
+  .demo-error { padding: 16px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); border-radius: 8px; color: #ef4444; font-size: 14px; }
+  .demo-loading { display: none; align-items: center; gap: 12px; padding: 20px; color: var(--text-muted); font-size: 14px; }
+  .demo-loading.visible { display: flex; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .demo-form { flex-direction: column; }
+    .demo-result-header { flex-wrap: wrap; }
+    .fix-where { display: none; }
+  }
   </style>
 </head>
 <body>
@@ -952,6 +1016,45 @@
     </div>
   </div>
 </div>
+
+<!-- LIVE DEMO -->
+<section class="demo-section" id="demo">
+  <div class="demo-inner">
+    <div class="demo-label">Live Demo</div>
+    <h2 class="demo-title">Audit any website in 10 seconds</h2>
+    <p class="demo-sub">Enter a URL and see the real score, top issues, and the exact HTML code fixes — no signup required.</p>
+
+    <div class="demo-form">
+      <input class="demo-input" id="demoUrl" type="url" placeholder="https://yourwebsite.com" autocomplete="off" />
+      <button class="demo-btn" id="demoBtn" onclick="runDemo()">Audit Now</button>
+    </div>
+    <p class="demo-note">Results are live — fetched directly from your URL. Free, no account needed.</p>
+
+    <div class="demo-loading" id="demoLoading">
+      <div class="spinner"></div>
+      <span id="demoLoadingText">Fetching page and running audit…</span>
+    </div>
+    <div id="demoError"></div>
+    <div class="demo-result" id="demoResult">
+      <div class="demo-result-header">
+        <div class="demo-score-ring" id="demoRing"><span id="demoScore">—</span></div>
+        <div class="demo-result-meta">
+          <h3 id="demoUrl2">—</h3>
+          <p id="demoSummary">—</p>
+        </div>
+        <span class="demo-grade" id="demoGrade">—</span>
+      </div>
+      <div class="demo-fixes">
+        <h4>Top fixes (copy-paste ready)</h4>
+        <div id="demoFixesList"></div>
+      </div>
+      <div class="demo-cta">
+        <span id="demoMoreFixes">Sign in to see all fixes and full report.</span>
+        <a href="login.html" class="btn btn-primary" style="font-size:13px;padding:8px 18px;">Get Full Report Free</a>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FEATURES -->
 <section id="features">
@@ -1261,6 +1364,103 @@
   }, { threshold: 0.08 });
 
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Live Demo
+  const API = 'https://naraseoai.onrender.com/api/v1';
+
+  async function runDemo() {
+    const input = document.getElementById('demoUrl');
+    const btn = document.getElementById('demoBtn');
+    const loading = document.getElementById('demoLoading');
+    const result = document.getElementById('demoResult');
+    const errEl = document.getElementById('demoError');
+
+    let url = input.value.trim();
+    if (!url) { input.focus(); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    btn.disabled = true;
+    loading.classList.add('visible');
+    result.classList.remove('visible');
+    errEl.innerHTML = '';
+    document.getElementById('demoLoadingText').textContent = 'Fetching page and running audit…';
+
+    try {
+      const r = await fetch(`${API}/solve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const json = await r.json();
+      if (!json.success) throw new Error(json.error?.message || 'Audit failed');
+      renderDemo(json.data, url);
+    } catch (e) {
+      errEl.innerHTML = `<div class="demo-error">⚠ ${e.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      loading.classList.remove('visible');
+    }
+  }
+
+  function renderDemo(data, url) {
+    const score = data.score || 0;
+    const grade = data.grade || '—';
+    const fixes = data.fixes || [];
+    const summary = data.summary || '';
+
+    // Score ring — conic gradient via CSS custom property
+    const ring = document.getElementById('demoRing');
+    ring.style.setProperty('--pct', score);
+    document.getElementById('demoScore').textContent = score;
+    document.getElementById('demoUrl2').textContent = new URL(url).hostname;
+
+    // Grade badge
+    const gradeEl = document.getElementById('demoGrade');
+    gradeEl.textContent = 'Grade ' + grade;
+    gradeEl.className = 'demo-grade grade-' + grade.toLowerCase().replace(/[^a-f]/g, '');
+
+    // Summary (first sentence)
+    document.getElementById('demoSummary').textContent = summary.split('.')[0] + '.';
+
+    // Top 3 fixes
+    const list = document.getElementById('demoFixesList');
+    list.innerHTML = '';
+    const top = fixes.slice(0, 3);
+    if (top.length === 0) {
+      list.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No critical fixes needed — this page is well-optimised.</p>';
+    } else {
+      top.forEach(fix => {
+        const impact = (fix.impact || 'medium').toLowerCase();
+        const code = fix.code ? fix.code.trim() : '';
+        list.innerHTML += `
+          <div class="demo-fix">
+            <div class="demo-fix-header">
+              <span class="fix-impact fix-${impact}">${impact}</span>
+              <span class="fix-issue">${fix.issue || 'fix'}</span>
+              ${fix.where ? `<span class="fix-where">${fix.where}</span>` : ''}
+            </div>
+            ${code ? `<div class="demo-fix-code">${escHtml(code)}</div>` : ''}
+            ${fix.explanation ? `<div class="demo-fix-why">${fix.explanation}</div>` : ''}
+          </div>`;
+      });
+    }
+
+    // More fixes message
+    const total = fixes.length;
+    document.getElementById('demoMoreFixes').textContent =
+      total > 3 ? `${total - 3} more fixes in the full report.` : 'Sign in to save this report and track improvements.';
+
+    document.getElementById('demoResult').classList.add('visible');
+    document.getElementById('demoResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('demoUrl').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runDemo();
+  });
 
   // Pricing FAQ
   function toggleFaq(btn) {

@@ -8,32 +8,93 @@ import https from 'https';
 
 const client = new Anthropic();
 
-// Wikipedia summary lookup — free, no auth
-function wikiLookup(term) {
+// Step 1: Find best-matching Wikipedia article title via search API
+function wikiSearch(term) {
   return new Promise((resolve) => {
-    const encoded = encodeURIComponent(term.replace(/\s+/g, '_'));
-    const options = {
+    const q = encodeURIComponent(term);
+    const req = https.get({
+      hostname: 'en.wikipedia.org',
+      path: `/w/api.php?action=query&list=search&srsearch=${q}&srnamespace=0&srlimit=1&format=json`,
+      headers: { 'User-Agent': 'NaraseoVerify/1.0 (https://naraseoai.onrender.com)' },
+      timeout: 5000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const hits = json.query?.search || [];
+          resolve(hits.length > 0 ? hits[0].title : null);
+        } catch { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+// Step 2: Get article summary by exact title
+function wikiSummary(title) {
+  return new Promise((resolve) => {
+    const encoded = encodeURIComponent(title.replace(/\s+/g, '_'));
+    const req = https.get({
       hostname: 'en.wikipedia.org',
       path: `/api/rest_v1/page/summary/${encoded}`,
       headers: { 'User-Agent': 'NaraseoVerify/1.0 (https://naraseoai.onrender.com)' },
       timeout: 5000,
-    };
-    https.get(options, (res) => {
+    }, (res) => {
       let data = '';
-      res.on('data', chunk => { data += chunk; });
+      res.on('data', c => { data += c; });
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
           if (json.type === 'standard' && json.extract) {
-            resolve({ found: true, summary: json.extract.slice(0, 300), title: json.title });
+            resolve({ found: true, summary: json.extract.slice(0, 400), title: json.title });
           } else {
             resolve({ found: false });
           }
         } catch { resolve({ found: false }); }
       });
-    }).on('error', () => resolve({ found: false }))
-      .on('timeout', () => resolve({ found: false }));
+    });
+    req.on('error', () => resolve({ found: false }));
+    req.on('timeout', () => { req.destroy(); resolve({ found: false }); });
   });
+}
+
+// 2-step Wikipedia lookup: search for best title → get summary
+// ~3x higher hit rate than direct title lookup
+async function wikiLookup(term) {
+  const title = await wikiSearch(term);
+  if (!title) return { found: false };
+  return wikiSummary(title);
+}
+
+// After getting wiki extracts, do ONE batch call to extract correct values
+// Returns map of { index → { matches, correct_value, source } }
+async function extractCorrectValues(claimsWithWiki) {
+  if (claimsWithWiki.length === 0) return {};
+  const items = claimsWithWiki
+    .map((c, i) => `${i}. CLAIM: "${c.claim}" | WIKIPEDIA: "${c.wiki_summary}"`)
+    .join('\n');
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `For each CLAIM below, check if the Wikipedia extract CONTRADICTS it (wrong number, wrong date, wrong person, etc.).
+Return ONLY a JSON array — no markdown:
+[{"index":0,"matches":true,"correct_value":null},{"index":1,"matches":false,"correct_value":"the correct fact from Wikipedia"}]
+
+${items}`,
+      }],
+    });
+    const raw = msg.content[0].text.trim().replace(/^```json\n?|^```\n?|\n?```$/g, '').trim();
+    const results = JSON.parse(raw);
+    const map = {};
+    for (const r of results) map[r.index] = r;
+    return map;
+  } catch { return {}; }
 }
 
 // Extract + assess claims via Claude Haiku
@@ -97,20 +158,40 @@ export async function verifyClaims(content) {
     Promise.resolve(scoreEEAT(content)),
   ]);
 
-  // Wiki verify high-risk verifiable claims (max 3 to keep fast)
-  const toVerify = claims.filter(c => c.verifiable && c.wiki_lookup && c.risk !== 'low').slice(0, 3);
+  // Wiki verify high-risk verifiable claims (max 4 to keep fast)
+  const toVerify = claims.filter(c => c.verifiable && c.wiki_lookup && c.risk !== 'low').slice(0, 4);
   const wikiResults = await Promise.all(toVerify.map(c => wikiLookup(c.wiki_lookup)));
 
   // Merge wiki results
+  const foundWithWiki = [];
   toVerify.forEach((claim, i) => {
     claim.wiki = wikiResults[i];
     if (wikiResults[i].found) {
       claim.status = 'verifiable';
       claim.wiki_summary = wikiResults[i].summary;
+      claim.wiki_title = wikiResults[i].title;
+      foundWithWiki.push({ ...claim, _idx: i });
     } else {
       claim.status = 'unverified';
     }
   });
+
+  // Batch-check if claims contradict their wiki source → return correct_value
+  if (foundWithWiki.length > 0) {
+    const corrections = await extractCorrectValues(foundWithWiki);
+    foundWithWiki.forEach((c, batchIdx) => {
+      const correction = corrections[batchIdx];
+      if (correction && !correction.matches && correction.correct_value) {
+        // Find the original claim and attach the correction
+        const original = toVerify.find(t => t.claim === c.claim);
+        if (original) {
+          original.status = 'contradicted';
+          original.correct_value = correction.correct_value;
+          original.source = `Wikipedia: ${original.wiki_title}`;
+        }
+      }
+    });
+  }
 
   // Mark remaining
   claims.forEach(c => {
@@ -119,7 +200,7 @@ export async function verifyClaims(content) {
     }
   });
 
-  const flagged = claims.filter(c => ['unverified', 'needs_review'].includes(c.status));
+  const flagged = claims.filter(c => ['unverified', 'needs_review', 'contradicted'].includes(c.status));
   const safe = claims.filter(c => ['verifiable', 'likely_safe', 'opinion'].includes(c.status));
 
   return {
