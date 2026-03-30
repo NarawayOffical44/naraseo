@@ -1,0 +1,16 @@
+{
+  "name": "naraseo",
+  "version": "1.0.0",
+  "description": "Naraseo AI — Verify AI content, audit SEO, and fix gaps before you ship. One API call.",
+  "main": "index.js",
+  "type": "module",
+  "keywords": ["seo", "ai", "hallucination", "verification", "content-audit", "mcp", "agency"],
+  "author": "Naraseo AI",
+  "license": "MIT",
+  "homepage": "https://naraseo.onrender.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NarawayOffical44/naraseo.git"
+  },
+  "engines": { "node": ">=18" }
+}
