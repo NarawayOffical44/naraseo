@@ -404,6 +404,134 @@ Capabilities:
         responses: { '200': { description: 'HTML fix with explanation and impact' } },
       },
     },
+    '/api/v1/verify': {
+      post: {
+        operationId: 'verifyContent',
+        summary: 'Hallucination detection + E-E-A-T scoring for AI content',
+        description: 'Extracts factual claims from content, cross-checks each against Wikipedia, flags unverifiable statements, and scores authoritativeness signals (author bio, dates, citations, credentials). Use before publishing AI-generated copy.',
+        tags: ['Intelligence'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['content'],
+                properties: {
+                  content: { type: 'string', minLength: 50, maxLength: 10000, description: 'Text content to verify — AI-generated copy, article draft, or any factual text' },
+                  url: { type: 'string', format: 'uri', description: 'Optional: fetch content from URL instead of passing text directly' },
+                },
+              },
+              example: {
+                content: 'OpenAI was founded in 2015 by Elon Musk and Sam Altman. The company has 50,000 employees worldwide.',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Verification result with flagged claims, E-E-A-T score, and safe claims',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        summary: { type: 'string', description: 'Plain-English verdict on content trustworthiness' },
+                        eeat: {
+                          type: 'object',
+                          properties: {
+                            score: { type: 'integer', description: 'E-E-A-T score 0-100' },
+                            grade: { type: 'string', enum: ['A', 'B', 'C', 'D', 'F'] },
+                            signals: { type: 'object', description: 'Which E-E-A-T signals were found' },
+                          },
+                        },
+                        flagged_claims: { type: 'array', items: { type: 'object', properties: { claim: { type: 'string' }, reason: { type: 'string' }, verdict: { type: 'string' } } } },
+                        safe_claims: { type: 'array', items: { type: 'string' } },
+                        total_claims: { type: 'integer' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/v1/entity-gap': {
+      post: {
+        operationId: 'analyzeEntityGap',
+        summary: 'Information gain analysis — what topics competitors cover that you are missing',
+        description: 'Uses NLP to extract named entities and concepts from your page and competitor pages. Returns missing entities ranked by how many competitors cover them, your unique advantages, and an information_gain_score. Use this to close topical authority gaps before publishing or optimising content.',
+        tags: ['Intelligence'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['url', 'keyword', 'competitorUrls'],
+                properties: {
+                  url: { type: 'string', format: 'uri', description: 'Your page URL' },
+                  keyword: { type: 'string', description: 'Target keyword you want to rank for' },
+                  competitorUrls: {
+                    type: 'array', minItems: 1, maxItems: 3,
+                    items: { type: 'string', format: 'uri' },
+                    description: '1-3 competitor URLs that currently rank for this keyword',
+                  },
+                },
+              },
+              example: {
+                url: 'https://yoursite.com/seo-guide',
+                keyword: 'technical seo guide 2025',
+                competitorUrls: ['https://backlinko.com/technical-seo', 'https://moz.com/beginners-guide-to-seo'],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Entity gap analysis with missing topics, advantages, and information gain score',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        information_gain_score: { type: 'integer', description: '0-100. Higher = your content covers more unique ground vs competitors' },
+                        verdict: { type: 'string', enum: ['competitive', 'gaps_found', 'significant_gaps'] },
+                        entity_gaps: {
+                          type: 'array',
+                          description: 'Topics missing from your page that competitors cover',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              entity: { type: 'string' },
+                              competitor_coverage: { type: 'string', description: 'e.g. 2/3 competitors' },
+                              priority: { type: 'string', enum: ['critical', 'recommended'] },
+                            },
+                          },
+                        },
+                        client_advantages: { type: 'array', items: { type: 'string' }, description: 'Topics you cover that competitors don\'t — your unique edge' },
+                        related_searches: { type: 'array', items: { type: 'string' }, description: 'Google Suggest related searches for the keyword' },
+                        action: { type: 'string', description: 'Top recommended next step' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/v1/health': {
       get: {
         operationId: 'healthCheck',
