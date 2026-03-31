@@ -17,6 +17,7 @@ import { trackGeoGrid } from '../lib/geoEngine.js';
 import { validatePageSchemas } from '../lib/schemaValidator.js';
 import { verifyClaims } from '../lib/verifyEngine.js';
 import { analyzeEntityGap } from '../lib/entityEngine.js';
+import { analyzeRisk } from '../lib/riskEngine.js';
 
 const anthropic = new Anthropic();
 
@@ -469,6 +470,22 @@ Generate a prioritised site-wide action plan as JSON: { summary, criticalSiteIss
     },
     async ({ url, keyword, competitorUrls }) => {
       const result = await analyzeEntityGap(url, keyword, competitorUrls);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // ── Tool 13: risk_audit ───────────────────────────────────────────────────
+  server.tool(
+    'risk_audit',
+    'Industry-aware hallucination risk audit for AI-generated or human content. Auto-detects industry (medical, legal, financial, general). Scans for critical risk signals: medical dosages, financial return guarantees, liability waivers, treatment claims. Returns publishable verdict (true/false), risk_level, risk_score, and a fix_before_publishing list. Use before publishing any content in regulated industries.',
+    {
+      content: z.string().min(30).max(15000)
+        .describe('The text content to audit for risk — paste AI-generated copy, article draft, or any content'),
+      industry: z.enum(['medical', 'legal', 'financial', 'general']).optional()
+        .describe('Industry context for risk detection. Auto-detected from content if omitted.'),
+    },
+    async ({ content, industry }) => {
+      const result = await analyzeRisk(content, industry || null);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );

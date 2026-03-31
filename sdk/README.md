@@ -58,6 +58,18 @@ Crawl an entire site and audit every page. Pro/Agency tier.
 ### `client.competitors(url, competitorUrls[])`
 Compare your page vs 1–5 competitors on score, word count, schema.
 
+### `client.solve(url, options?)`
+Autonomous full-stack solve: audit + keywords + schema → precise copy-paste HTML fixes with exact placement. One call, complete action plan.
+
+### `client.solveSite(url, { maxPages? })`
+Site-wide audit via sitemap. Discovers all pages, audits each, returns one prioritised action plan.
+
+### `client.content(url, targetKeywords?)`
+Find exactly where to insert keywords into existing content — minimal, natural changes only. Returns per-element placement suggestions.
+
+### `client.deploy(url, options?)`
+Generate a deployable `<script>` block that fixes all detectable SEO issues client-side. Paste into any CMS — no server access needed.
+
 ## Free tier
 
 No API key required for up to 100 requests/day. Get a key at [naraseo.onrender.com](https://naraseo.onrender.com).

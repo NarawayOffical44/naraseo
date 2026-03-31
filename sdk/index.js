@@ -148,6 +148,48 @@ class NaraseoClient {
   async competitors(url, competitorUrls) {
     return this.#post('/competitors', { url, competitorUrls });
   }
+
+  /**
+   * Autonomous full-stack solve: audit + keywords + schema → precise fixes with exact code.
+   * One call replaces audit + keywords + schema validate.
+   * @param {string} url
+   * @param {{ businessName?, phone?, address? }} [options]
+   * @returns {{ score, grade, summary, fixes, keywordOpportunities, quickWins, estimatedScoreAfterFixes }}
+   */
+  async solve(url, options = {}) {
+    return this.#post('/solve', { url, ...options });
+  }
+
+  /**
+   * Site-wide audit via sitemap. Discovers all pages, audits each, returns one action plan.
+   * @param {string} url - root domain
+   * @param {{ maxPages? }} [options]
+   * @returns {{ siteScore, pagesAudited, criticalSiteIssues, pageSpecificFixes, quickWins }}
+   */
+  async solveSite(url, { maxPages = 50 } = {}) {
+    return this.#post('/solve-site', { url, maxPages });
+  }
+
+  /**
+   * Find where to insert target keywords into existing page content — minimal, natural changes only.
+   * @param {string} url
+   * @param {string[]} [targetKeywords] - omit to auto-detect from page
+   * @returns {{ placements, skipped, summary }}
+   */
+  async content(url, targetKeywords = []) {
+    return this.#post('/content', { url, ...(targetKeywords.length && { targetKeywords }) });
+  }
+
+  /**
+   * Generate a deployable patch script that fixes all SEO issues client-side.
+   * Returns a <script> block to paste into any CMS — no server access needed.
+   * @param {string} url
+   * @param {{ businessName?, businessType?, phone?, address? }} [options]
+   * @returns {{ scriptBlock, htmlSnippet, wpPlugin, fixesList, instructions }}
+   */
+  async deploy(url, options = {}) {
+    return this.#post('/deploy', { url, ...options });
+  }
 }
 
 /**
