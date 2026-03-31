@@ -150,7 +150,7 @@ Return this exact JSON structure:
           hasCanonical: !!pageData.canonical,
         },
         schemaStatus: schemaResult?.data || null,
-        keywords: keywordResult?.data?.aiAnalysis || null,
+        keywords: keywordResult?.data?.analysis || null,
         coreWebVitals: ps ? {
           performanceScore: ps.performanceScore,
           seoScore: ps.seoScore,

@@ -54,11 +54,13 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
 
     if (req.deductCredit) req.deductCredit().catch(() => {});
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     return res.status(200).json({
       success: true,
       data: {
         certificate_id: certificateId,
-        certificate_url: `${req.protocol}://${req.get('host')}/api/v1/verify/${certificateId}`,
+        certificate_url: `${baseUrl}/api/v1/proof/${certificateId}`,   // human-readable HTML certificate
+        json_url: `${baseUrl}/api/v1/verify/${certificateId}`,          // raw JSON record
         content_hash: contentHash,
         url: url || null,
         ...result,
@@ -67,7 +69,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       meta: {
         processingMs: Date.now() - startTime,
         creditsUsed: 1,
-        note: 'Certificate of Accuracy — share certificate_id or certificate_url as proof this content was verified.',
+        note: 'Share certificate_url with clients — it renders a branded Certificate of Accuracy HTML page.',
       },
     });
   } catch (error) {

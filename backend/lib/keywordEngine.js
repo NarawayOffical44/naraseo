@@ -218,10 +218,9 @@ Based on the REAL Google suggestions (not guesses — these are actual searches)
       data: {
         extractedKeywords: keywords,
         extractedPhrases: phrases,
-        realSuggestions,           // ← actual Google autocomplete data
-        allRealSuggestions,        // ← flat list
-        aiAnalysis,
-        dataSource: 'google_suggest + claude_synthesis',
+        suggestions: realSuggestions,
+        allSuggestions: allRealSuggestions,
+        analysis: aiAnalysis,
         wordCount: pageContent.split(/\s+/).length,
         analysisTime: new Date().toISOString(),
       },

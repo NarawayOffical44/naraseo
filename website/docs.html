@@ -317,6 +317,7 @@
     <div class="sidebar-section">
       <div class="sidebar-title">AI Verification</div>
       <div class="sidebar-link" onclick="showSection('verify')">Verify Content</div>
+      <div class="sidebar-link" onclick="showSection('proof')">Proof Certificate</div>
       <div class="sidebar-link" onclick="showSection('risk')">Risk Audit</div>
       <div class="sidebar-link" onclick="showSection('entity-gap')">Entity Gap</div>
     </div>
@@ -780,10 +781,10 @@ app.listen(3000, () => console.log('Running on port 3000'));</div>
     "extractedKeywords": [
       { "keyword": "seo", "count": 45, "density": "3.2%" }
     ],
-    "realSuggestions": {
+    "suggestions": {
       "seo": ["seo tools", "seo tips", "seo services", ...]
     },
-    "aiAnalysis": {
+    "analysis": {
       "primaryKeyword": "seo",
       "searchIntent": "informational",
       "semanticCluster": ["seo optimization", "search engine optimization"],
@@ -814,13 +815,13 @@ def analyze_keywords(url, api_key):
 
 keywords = analyze_keywords('https://example.com', 'YOUR_API_KEY')
 
-print(f"Primary Keyword: {keywords['aiAnalysis']['primaryKeyword']}")
-print(f"Search Intent: {keywords['aiAnalysis']['searchIntent']}")
+print(f"Primary Keyword: {keywords['analysis']['primaryKeyword']}")
+print(f"Search Intent: {keywords['analysis']['searchIntent']}")
 print(f"\nQuick Wins:")
-for win in keywords['aiAnalysis']['quickWins']:
+for win in keywords['analysis']['quickWins']:
     print(f"  • {win['keyword']} - {win['action']}")
 
-print(f"\nContent Gaps: {', '.join(keywords['aiAnalysis']['contentGaps'])}")</div>
+print(f"\nContent Gaps: {', '.join(keywords['analysis']['contentGaps'])}")</div>
     </section>
 
     <!-- SCHEMA -->
@@ -1058,7 +1059,9 @@ downloadReport('https://example.com', 'YOUR_API_KEY');</div>
   "success": true,
   "data": {
     "certificate_id": "cert_a1b2c3d4",
-    "certificate_url": "https://naraseoai.onrender.com/api/v1/verify/cert_a1b2c3d4",
+    "certificate_url": "https://naraseoai.onrender.com/api/v1/proof/cert_a1b2c3d4",  // shareable HTML page
+    "json_url":        "https://naraseoai.onrender.com/api/v1/verify/cert_a1b2c3d4", // raw JSON
+    "content_hash": "sha256:3f4a...",
     "summary": {
       "total_claims": 8,
       "flagged": 2,
@@ -1106,6 +1109,59 @@ if (!data.summary.verdict === 'clean') {
 
 // Share the certificate with your client
 console.log('Verified at:', data.certificate_url);</div>
+    </section>
+
+    <!-- PROOF CERTIFICATE -->
+    <section id="proof" class="doc-section">
+      <h1>Proof Certificate</h1>
+      <p>Every <code>/verify</code> call returns a <code>certificate_url</code>. That URL renders a branded, human-readable <strong>Certificate of Accuracy</strong> — a shareable HTML page that proves a piece of content was independently verified at a specific point in time.</p>
+
+      <div class="note" style="background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.25)">
+        <strong>The "SSL Certificate" of AI content.</strong> Share the certificate URL with your client. They see the verdict badge, claim count, E-E-A-T score, sources cited, and a SHA-256 fingerprint bound to the exact text that was verified. Any change to the content produces a different hash — the certificate is invalidated automatically.
+      </div>
+
+      <div class="endpoint">
+        <div style="margin-bottom:12px">
+          <span class="method-badge" style="background:#22c55e">GET</span>
+          <code>/api/v1/proof/:certificate_id</code>
+        </div>
+        <p>Returns a styled HTML Certificate of Accuracy page. No auth required — designed to be publicly shareable.</p>
+      </div>
+
+      <h2>What the Certificate Shows</h2>
+      <ul style="margin:12px 0 16px 20px;color:#94a3b8;font-size:14px;line-height:2">
+        <li>Verdict badge: <strong>VERIFIED</strong> / <strong>REVIEW NEEDED</strong> / <strong>DO NOT PUBLISH</strong></li>
+        <li>Certificate ID and content fingerprint (SHA-256 hash of the exact text)</li>
+        <li>Claims checked vs flagged</li>
+        <li>E-E-A-T score with visual bar</li>
+        <li>Verification sources: open knowledge graph databases</li>
+        <li>Timestamp (UTC) of when verification ran</li>
+        <li>Link to raw JSON for developer inspection</li>
+      </ul>
+
+      <h2>Example Usage</h2>
+      <div class="code-block">// 1. Verify content — get back a certificate
+const res = await fetch('https://naraseoai.onrender.com/api/v1/verify', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ content: articleText, url: 'https://yoursite.com/article' })
+});
+const { data } = await res.json();
+
+// 2. Share the certificate URL with your client
+console.log(data.certificate_url);
+// → https://naraseoai.onrender.com/api/v1/proof/cert_a1b2c3d4
+//   Opens a branded HTML certificate page — no login required
+
+// 3. Store the certificate_id in your database alongside the content
+await db.save({ content_id: articleId, cert_id: data.certificate_id });
+
+// 4. Retrieve later to re-verify or audit
+const certRes = await fetch(`https://naraseoai.onrender.com/api/v1/proof/${data.certificate_id}`);
+// Returns the same HTML page</div>
+
+      <h2>Why This Matters</h2>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-top:8px">Agencies publishing AI-generated content for clients need a paper trail. When a client asks <em>"why did your AI change this fact?"</em> or <em>"how do we know this is accurate?"</em> — the certificate URL is your answer. It is deterministic (same content = same hash), timestamped, and source-cited.</p>
     </section>
 
     <!-- RISK AUDIT -->
@@ -1202,13 +1258,15 @@ async function safeToPublish(content, industry) {
         "entity": "Core Web Vitals",
         "missing_from_client": true,
         "competitor_coverage": "3/3 competitors",
-        "priority": "critical"
+        "priority": "critical",
+        "wikidata": { "id": "Q97494753", "label": "Core Web Vitals", "description": "set of specific factors Google considers important in a webpage's overall user experience" }
       },
       {
         "entity": "PageSpeed Insights",
         "missing_from_client": true,
         "competitor_coverage": "2/3 competitors",
-        "priority": "recommended"
+        "priority": "recommended",
+        "wikidata": null
       }
     ],
     "client_advantages": ["Proprietary scoring algorithm", "Real-time data"],
@@ -1277,6 +1335,9 @@ console.log('Missing entities:', data.entity_gaps.filter(e => e.priority === 'cr
         <li><strong>local_seo_audit</strong> — Local SEO signals and consistency check</li>
         <li><strong>competitor_analysis</strong> — Gap analysis with domain authority data</li>
         <li><strong>seo_chat</strong> — Conversational SEO assistant with page context</li>
+        <li><strong>verify_content</strong> — Hallucination detection with ground-truth verification; returns Certificate of Accuracy</li>
+        <li><strong>entity_gap</strong> — Information gain analysis — missing knowledge-graph entities vs competitors, with canonical entity IDs</li>
+        <li><strong>risk_audit</strong> — Industry-aware risk scan (medical / legal / financial); returns <code>publishable</code> boolean</li>
       </ul>
     </section>
 

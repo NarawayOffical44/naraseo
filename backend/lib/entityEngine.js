@@ -50,6 +50,32 @@ function getGoogleSuggestions(keyword) {
   });
 }
 
+// Wikidata entity lookup — free, no API key, returns canonical QID + description
+// Used to ground extracted entities against the knowledge graph
+function wikidataLookup(entity) {
+  return new Promise((resolve) => {
+    const q = encodeURIComponent(entity);
+    const req = https.get({
+      hostname: 'www.wikidata.org',
+      path: `/w/api.php?action=wbsearchentities&search=${q}&language=en&format=json&limit=1&type=item`,
+      headers: { 'User-Agent': 'NaraseoAI/1.0 (https://naraseoai.onrender.com)' },
+      timeout: 4000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const hit = json.search?.[0];
+          resolve(hit ? { id: hit.id, label: hit.label, description: hit.description || null } : null);
+        } catch { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
 // Strip HTML to plain text
 function htmlToText(html) {
   return html
@@ -145,6 +171,17 @@ export async function analyzeEntityGap(clientUrl, keyword, competitorUrls = []) 
   const criticalGaps = gaps.filter(g => g.count === totalCompetitors);
   const informationGainScore = Math.max(0, 100 - Math.round((gaps.length / Math.max(1, gaps.length + clientEntities.size)) * 100));
 
+  // Wikidata grounding for critical gaps — gives each entity a canonical knowledge-graph ID
+  // Only look up critical gaps (present in ALL competitors) to keep latency low
+  const criticalToGround = criticalGaps.slice(0, 6);
+  const wikidataResults = await Promise.all(
+    criticalToGround.map(g => wikidataLookup(g.entity).catch(() => null))
+  );
+  const wikidataMap = new Map();
+  criticalToGround.forEach((g, i) => {
+    if (wikidataResults[i]) wikidataMap.set(g.entity.toLowerCase(), wikidataResults[i]);
+  });
+
   return {
     keyword,
     client_url: clientUrl,
@@ -156,6 +193,7 @@ export async function analyzeEntityGap(clientUrl, keyword, competitorUrls = []) 
       missing_from_client: true,
       competitor_coverage: `${g.count}/${totalCompetitors} competitors`,
       priority: g.count === totalCompetitors ? 'critical' : 'recommended',
+      wikidata: wikidataMap.get(g.entity.toLowerCase()) || null,
     })),
     client_advantages: advantages,
     related_searches: suggestions,

@@ -134,20 +134,59 @@ ${content.slice(0, 3000)}`
   }
 }
 
-// Score E-E-A-T signals from content
+// Score E-E-A-T signals — HTML-aware: detects Schema markup, meta author, time tags, cite elements
 function scoreEEAT(content) {
+  const hasHtml = /<[a-z][\s\S]*>/i.test(content);
   const signals = {
-    hasAuthorMention: /\b(written by|author|by [A-Z][a-z]+ [A-Z][a-z]+)\b/i.test(content),
-    hasDateMention: /\b(20\d\d|january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(content),
-    hasCitations: /\b(according to|source:|cited|study|research|published)\b/i.test(content),
-    hasOriginalData: /\b(\d+%|\d+ percent|survey|we found|our data|our study)\b/i.test(content),
-    hasExpertVoice: /\b(expert|professional|certified|licensed|specialist|Dr\.|PhD|MD)\b/i.test(content),
+    // Experience — author attribution (text + HTML meta/schema)
+    hasAuthorMention:
+      /\b(written by|author|byline)\b/i.test(content) ||
+      /\bby [A-Z][a-z]+ [A-Z][a-z]+\b/.test(content) ||
+      (hasHtml && (
+        /<meta[^>]+name=["']author["'][^>]*/i.test(content) ||
+        /"author"\s*:\s*[{"[]/i.test(content) ||
+        /itemprop=["']author["']/i.test(content) ||
+        /class=["'][^"']*\b(author|byline)\b[^"']*["']/i.test(content)
+      )),
+    // Expertise — professional credentials
+    hasExpertVoice:
+      /\b(expert|professional|certified|licensed|specialist|Dr\.|PhD|MD)\b/i.test(content) ||
+      /\b(years? of experience|industry leader|award.winning)\b/i.test(content) ||
+      (hasHtml && (
+        /"jobTitle"/i.test(content) ||
+        /itemprop=["'](jobTitle|honorificPrefix)["']/i.test(content)
+      )),
+    // Authoritativeness — citations and sources
+    hasCitations:
+      /\b(according to|source:|cited|study|research|published|references?)\b/i.test(content) ||
+      (hasHtml && (/<cite\b/i.test(content) || /<blockquote\b/i.test(content))),
+    // Trustworthiness — dates (text + HTML time/schema)
+    hasDateMention:
+      /\b20\d\d\b/.test(content) ||
+      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(content) ||
+      (hasHtml && (
+        /<time\b/i.test(content) ||
+        /"datePublished"/i.test(content) ||
+        /itemprop=["']datePublished["']/i.test(content)
+      )),
+    // Experience — original research / first-party data
+    hasOriginalData:
+      /\b(\d+%|\d+ percent|survey|we found|our data|our study|our research|our analysis)\b/i.test(content),
+    // Authoritativeness — Article/BlogPosting schema markup
+    hasSchemaMarkup:
+      hasHtml &&
+      /<script[^>]+type=["']application\/ld\+json["']/i.test(content) &&
+      /"@type"\s*:\s*"(Article|BlogPosting|NewsArticle|MedicalWebPage|FAQPage|HowTo)"/i.test(content),
+    // Trustworthiness — external links as cited sources
+    hasExternalLinks:
+      hasHtml && /<a\s[^>]*href=["']https?:\/\//i.test(content),
   };
   const score = Object.values(signals).filter(Boolean).length;
+  const maxScore = Object.keys(signals).length;
   return {
-    score: Math.round((score / 5) * 100),
+    score: Math.round((score / maxScore) * 100),
     signals,
-    grade: score >= 4 ? 'strong' : score >= 2 ? 'moderate' : 'weak',
+    grade: score >= 5 ? 'strong' : score >= 3 ? 'moderate' : 'weak',
     missing: Object.entries(signals).filter(([, v]) => !v).map(([k]) => k),
   };
 }
@@ -159,7 +198,7 @@ export async function verifyClaims(content) {
   ]);
 
   // Wiki verify high-risk verifiable claims (max 4 to keep fast)
-  const toVerify = claims.filter(c => c.verifiable && c.wiki_lookup && c.risk !== 'low').slice(0, 4);
+  const toVerify = claims.filter(c => c.verifiable && c.wiki_lookup && c.risk !== 'low').slice(0, 8);
   const wikiResults = await Promise.all(toVerify.map(c => wikiLookup(c.wiki_lookup)));
 
   // Merge wiki results

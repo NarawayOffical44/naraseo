@@ -43,7 +43,7 @@ router.post('/', featureAccess('keywords'), async (req, res) => {
     let keywords = targetKeywords.filter(Boolean);
     if (keywords.length === 0 && html) {
       const kwResult = await analyzeKeywords(pageData.title, pageData.metaDescription, html).catch(() => null);
-      const aiKws = kwResult?.data?.aiAnalysis?.primaryKeywords || [];
+      const aiKws = kwResult?.data?.analysis?.primaryKeywords || [];
       keywords = aiKws.slice(0, 5).map(k => (typeof k === 'string' ? k : k.keyword)).filter(Boolean);
     }
 

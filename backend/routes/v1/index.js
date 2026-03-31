@@ -20,12 +20,14 @@ import deployRouter from './deploy.js';
 import verifyRouter from './verify.js';
 import entityGapRouter from './entityGap.js';
 import riskRouter from './risk.js';
+import proofRouter from './proof.js';
 import { openapiSpec } from './openapi.js';
 
 const router = express.Router();
 
 // Mount all sub-routers
 router.use('/verify', verifyRouter);
+router.use('/proof', proofRouter);
 router.use('/entity-gap', entityGapRouter);
 router.use('/audit/risk', riskRouter);
 router.use('/solve', solveRouter);
@@ -88,6 +90,7 @@ router.get('/', (req, res) => {
         'POST /api/v1/chat',
         'POST /api/v1/fixes',
         'POST /api/v1/verify        ← hallucination detection + E-E-A-T scoring for AI content',
+        'GET  /api/v1/proof/:id    ← Certificate of Accuracy HTML page (shareable proof of verification)',
         'POST /api/v1/entity-gap   ← information gain: what entities competitors have that you lack',
         'POST /api/v1/audit/risk   ← hallucination risk audit: publishable verdict + legal risk signals',
         'GET  /api/v1/health',
