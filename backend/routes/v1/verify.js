@@ -6,6 +6,7 @@
 
 import express from 'express';
 import { verifyClaims } from '../../lib/verifyEngine.js';
+import { fetchURL } from '../../lib/seoEngine.js';
 import { saveVerification, getVerification } from '../../lib/history.js';
 import { featureAccess, creditCheck, sendApiError } from '../../middleware/apiKey.js';
 import supabase from '../../supabase.js';
@@ -33,7 +34,17 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
 
   try {
     const startTime = Date.now();
-    const result = await verifyClaims(content);
+
+    // Fetch source HTML for schema conflict detection — 3s hard timeout keeps p99 latency low
+    let html = null;
+    if (url) {
+      html = await Promise.race([
+        fetchURL(url).catch(() => null),
+        new Promise(resolve => setTimeout(() => resolve(null), 3000)),
+      ]);
+    }
+
+    const result = await verifyClaims(content, { html });
 
     const certificateId = `cert_${crypto.randomBytes(8).toString('hex')}`;
     const contentHash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);

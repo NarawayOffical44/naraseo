@@ -37,6 +37,16 @@ function renderCertificate(record) {
   const totalClaims = record.result_json?.summary?.total_claims || 0;
   const flaggedClaims = record.flagged_count || 0;
   const safeClaims = Math.max(0, totalClaims - flaggedClaims);
+  const schemaConflicts = record.result_json?.summary?.schema_conflicts_found || 0;
+
+  // Drift index — content validity window
+  const drift = record.result_json?.drift_index || null;
+  const driftStabilityColors = { volatile: '#ef4444', moderate: '#eab308', stable: '#22c55e', permanent: '#6366f1' };
+  const driftColor = drift ? (driftStabilityColors[drift.stability] || '#94a3b8') : '#94a3b8';
+  const driftLabel = drift ? drift.stability.charAt(0).toUpperCase() + drift.stability.slice(1) : null;
+  const validUntilFormatted = drift?.valid_until
+    ? new Date(drift.valid_until).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : null;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -204,18 +214,38 @@ function renderCertificate(record) {
         <div class="bar-wrap"><div class="bar-fill"></div></div>
       </div>
 
+      ${drift ? `<div class="section-title">Content Validity Window</div>
+      <div class="method-row">
+        <span class="method-label">Stability classification</span>
+        <span class="method-value" style="color:${driftColor};font-weight:700">${driftLabel}</span>
+      </div>
+      <div class="method-row">
+        <span class="method-label">Valid until</span>
+        <span class="method-value">${validUntilFormatted} &middot; ${drift.valid_days} days</span>
+      </div>
+      ${drift.re_verify_recommended ? `<div class="method-row">
+        <span class="method-label" style="color:#eab308">&#9888; Re-verify recommended</span>
+        <span class="method-value" style="color:#64748b">${drift.reason || 'Content may drift'}</span>
+      </div>` : ''}` : ''}
+
+      ${schemaConflicts > 0 ? `<div class="section-title">Schema Integrity</div>
+      <div class="method-row">
+        <span class="method-label" style="color:#ef4444">&#9888; Conflicts detected</span>
+        <span class="method-value" style="color:#ef4444;font-weight:700">${schemaConflicts} JSON-LD conflict${schemaConflicts !== 1 ? 's' : ''}</span>
+      </div>` : ''}
+
       <div class="section-title">Verification Method</div>
       <div class="method-row">
         <span class="method-label">Ground-truth sources</span>
-        <span class="method-value">Wikipedia REST API &middot; Wikidata</span>
+        <span class="method-value">Open knowledge graph databases</span>
       </div>
       <div class="method-row">
-        <span class="method-label">Claim extraction</span>
-        <span class="method-value">Claude Haiku (Anthropic)</span>
+        <span class="method-label">Claim analysis</span>
+        <span class="method-value">Naraseo AI proprietary model</span>
       </div>
       <div class="method-row">
         <span class="method-label">Risk pattern detection</span>
-        <span class="method-value">Deterministic regex (medical, legal, financial)</span>
+        <span class="method-value">Deterministic signals (medical, legal, financial)</span>
       </div>
       <div class="method-row">
         <span class="method-label">Verification API</span>

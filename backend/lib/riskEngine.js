@@ -115,9 +115,9 @@ function generateFixes(legalSignals, flaggedClaims, industry) {
 export async function analyzeRisk(content, industry = null) {
   const detectedIndustry = industry || detectIndustry(content);
 
-  // Run claim verification and high-risk pattern scan in parallel
+  // Run claim verification (with industry for drift index) and pattern scan in parallel
   const [verifyResult, legalSignals] = await Promise.all([
-    verifyClaims(content),
+    verifyClaims(content, { industry: detectedIndustry }),
     Promise.resolve(scanHighRiskSignals(content, detectedIndustry)),
   ]);
 
@@ -143,7 +143,9 @@ export async function analyzeRisk(content, industry = null) {
     risk_score: riskScore,
     industry_detected: detectedIndustry,
     verdict_text: verdictText,
+    drift_index: verifyResult.drift_index,
     legal_risk_signals: legalSignals,
+    schema_conflicts: verifyResult.schema_conflicts,
     flagged_claims: verifyResult.flagged_claims,
     eeat: verifyResult.eeat,
     fix_before_publishing: generateFixes(legalSignals, verifyResult.flagged_claims, detectedIndustry),
@@ -152,6 +154,7 @@ export async function analyzeRisk(content, industry = null) {
       flagged_claims: verifyResult.summary.flagged,
       legal_signals_found: legalSignals.length,
       critical_signals: legalSignals.filter(s => s.severity === 'critical').length,
+      schema_conflicts: verifyResult.schema_conflicts.length,
       eeat_score: verifyResult.eeat.score,
       eeat_grade: verifyResult.eeat.grade,
     },

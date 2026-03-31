@@ -182,24 +182,51 @@ export async function analyzeEntityGap(clientUrl, keyword, competitorUrls = []) 
     if (wikidataResults[i]) wikidataMap.set(g.entity.toLowerCase(), wikidataResults[i]);
   });
 
+  // Build Schema.org injection code for Wikidata-grounded entities
+  function buildInjection(entity, wikidata) {
+    if (!wikidata?.id) return null;
+    return {
+      schema_markup: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Thing',
+        'name': wikidata.label || entity,
+        'description': wikidata.description || entity,
+        'sameAs': `https://www.wikidata.org/wiki/${wikidata.id}`,
+      }, null, 2),
+      inline_html: `<span itemscope itemtype="https://schema.org/Thing" itemid="https://www.wikidata.org/wiki/${wikidata.id}">${wikidata.label || entity}</span>`,
+      wikidata_url: `https://www.wikidata.org/wiki/${wikidata.id}`,
+      instruction: `Add schema_markup to your page JSON-LD OR wrap inline mentions with inline_html. Entity ID: ${wikidata.id}`,
+    };
+  }
+
   return {
     keyword,
     client_url: clientUrl,
     competitors_analyzed: totalCompetitors,
     information_gain_score: informationGainScore,
     verdict: criticalGaps.length === 0 ? 'competitive' : criticalGaps.length <= 3 ? 'gaps_found' : 'significant_gaps',
-    entity_gaps: gaps.map(g => ({
-      entity: g.entity,
-      missing_from_client: true,
-      competitor_coverage: `${g.count}/${totalCompetitors} competitors`,
-      priority: g.count === totalCompetitors ? 'critical' : 'recommended',
-      wikidata: wikidataMap.get(g.entity.toLowerCase()) || null,
-    })),
+    entity_gaps: gaps.map(g => {
+      const wikidata = wikidataMap.get(g.entity.toLowerCase()) || null;
+      const isBlocking = g.count === totalCompetitors;
+      return {
+        entity: g.entity,
+        missing_from_client: true,
+        competitor_coverage: `${g.count}/${totalCompetitors} competitors`,
+        priority: isBlocking ? 'critical' : 'recommended',
+        enforcement: isBlocking ? 'BLOCKING' : 'RECOMMENDED',
+        verdict: isBlocking
+          ? `BLOCKING — "${g.entity}" absent from your content, present in all ${totalCompetitors} ranking pages. Must add before publishing.`
+          : `RECOMMENDED — "${g.entity}" found in ${g.count}/${totalCompetitors} competitor pages.`,
+        wikidata,
+        injection: buildInjection(g.entity, wikidata),
+      };
+    }),
     client_advantages: advantages,
     related_searches: suggestions,
     client_entities_found: entityArrays[0]?.length || 0,
+    blocking_count: criticalGaps.length,
     action: criticalGaps.length > 0
-      ? `Add these ${criticalGaps.length} critical entities to rank competitively: ${criticalGaps.map(g => g.entity).join(', ')}`
-      : 'Content covers key entities well. Focus on depth and authority.',
+      ? `BLOCKING: ${criticalGaps.length} entity gap(s) prevent competitive ranking. Add: ${criticalGaps.map(g => g.entity).join(', ')}`
+      : 'No blocking entity gaps. Content entity coverage is competitive.',
   };
 }

@@ -191,13 +191,143 @@ function scoreEEAT(content) {
   };
 }
 
-export async function verifyClaims(content) {
+// ── OpenAlex — 250M+ peer-reviewed papers, free, no API key ─────────────────
+// Returns the most-cited open-access paper matching a claim query
+function openAlexSearch(claim) {
+  return new Promise((resolve) => {
+    const q = encodeURIComponent(claim.slice(0, 120));
+    const path = `/works?search=${q}&filter=open_access.is_oa:true&per_page=1&sort=cited_by_count:desc&mailto=verify@naraseoai.com`;
+    const req = https.get({
+      hostname: 'api.openalex.org',
+      path,
+      headers: { 'User-Agent': 'NaraseoVerify/1.0 (mailto:verify@naraseoai.com)' },
+      timeout: 5000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const w = json.results?.[0];
+          if (w?.title) {
+            resolve({
+              found: true,
+              title: w.title,
+              doi: w.doi || null,
+              cited_by_count: w.cited_by_count || 0,
+              publication_year: w.publication_year || null,
+              url: w.primary_location?.landing_page_url || w.doi || null,
+            });
+          } else { resolve({ found: false }); }
+        } catch { resolve({ found: false }); }
+      });
+    });
+    req.on('error', () => resolve({ found: false }));
+    req.on('timeout', () => { req.destroy(); resolve({ found: false }); });
+  });
+}
+
+// ── Schema Conflict Detection ─────────────────────────────────────────────────
+// Extracts factual fields from JSON-LD blocks in HTML
+function extractSchemaFacts(html) {
+  const facts = {};
+  const matches = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  for (const m of matches) {
+    try {
+      const schemas = [].concat(JSON.parse(m[1].trim()));
+      for (const s of schemas) {
+        if (s.foundingDate)                facts.foundingDate        = String(s.foundingDate);
+        if (s.foundingYear)                facts.foundingYear        = String(s.foundingYear);
+        if (s.name)                        facts.name                = String(s.name);
+        if (s.telephone)                   facts.telephone           = String(s.telephone);
+        if (s.priceRange)                  facts.priceRange          = String(s.priceRange);
+        if (s.openingHours)                facts.openingHours        = [].concat(s.openingHours).join(', ');
+        if (s.aggregateRating?.ratingValue) facts.ratingValue        = String(s.aggregateRating.ratingValue);
+        if (s.numberOfEmployees?.value)    facts.numberOfEmployees   = String(s.numberOfEmployees.value);
+        if (s.datePublished)               facts.datePublished       = String(s.datePublished);
+        if (s.author?.name)                facts.authorName          = String(s.author.name);
+        if (s.address?.streetAddress)      facts.streetAddress       = String(s.address.streetAddress);
+        if (s.address?.addressLocality)    facts.city                = String(s.address.addressLocality);
+      }
+    } catch { /* skip malformed JSON-LD */ }
+  }
+  return facts;
+}
+
+// Compare schema facts against body text — catch cross-layer contradictions
+async function detectSchemaConflicts(bodyText, schemaFacts) {
+  if (Object.keys(schemaFacts).length === 0) return [];
+  const factsStr = Object.entries(schemaFacts).map(([k, v]) => `${k}: "${v}"`).join('\n');
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `You are checking for factual contradictions between a page's structured Schema markup and its body text.
+
+Schema facts declared in JSON-LD:
+${factsStr}
+
+Body text (first 3000 chars):
+${bodyText.slice(0, 3000)}
+
+For each Schema fact, check if the body text explicitly states something DIFFERENT (wrong number, different date, different name, different hours).
+Return ONLY a JSON array — empty [] if no conflicts:
+[{
+  "field": "foundingDate",
+  "schema_value": "2015",
+  "body_text_value": "2016",
+  "conflict_excerpt": "exact phrase from body that contradicts",
+  "severity": "high|medium",
+  "fix": "Update body text OR Schema to match"
+}]
+Only flag real factual contradictions — not minor wording differences.`,
+      }],
+    });
+    const raw = msg.content[0].text.trim().replace(/^```json\n?|^```\n?|\n?```$/g, '').trim();
+    const result = JSON.parse(raw);
+    return Array.isArray(result) ? result : [];
+  } catch { return []; }
+}
+
+// ── Drift Index — temporal stability of verified facts ────────────────────────
+// Determines how long a Certificate of Accuracy can be trusted
+function computeDriftIndex(claims, industry) {
+  const allText = claims.map(c => c.claim).join(' ').toLowerCase();
+  const volatileTerms = /\b(rate|price|fee|law|regulation|statute|ruling|tariff|penalty|fine|tax|quota|current|today|latest|recent|updated|now|this year|interest|yield|apy|apr)\b/g;
+  const stableTerms   = /\b(history|founded|invented|discovered|always|never|theorem|constant|formula|definition|scientific|mathematical|proven)\b/g;
+  const volatileCount = (allText.match(volatileTerms) || []).length;
+  const stableCount   = (allText.match(stableTerms)   || []).length;
+
+  if (industry === 'financial' || industry === 'legal') {
+    return { stability: 'low',       valid_days: 7,   reason: `${industry} content — rates and rulings change frequently` };
+  }
+  if (industry === 'medical') {
+    return { stability: 'medium',    valid_days: 30,  reason: 'Medical guidelines update periodically' };
+  }
+  if (volatileCount > stableCount + 2) {
+    return { stability: 'low',       valid_days: 7,   reason: 'Contains volatile facts (rates, laws, prices)' };
+  }
+  if (stableCount > volatileCount * 2) {
+    return { stability: 'permanent', valid_days: 180, reason: 'Based on stable historical or scientific facts' };
+  }
+  return   { stability: 'medium',    valid_days: 90,  reason: 'General content with mixed temporal stability' };
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+// html: optional page HTML for schema conflict detection
+// industry: optional industry hint for drift index ('medical'|'legal'|'financial'|'general')
+export async function verifyClaims(content, { html = null, industry = null } = {}) {
+  // Detect HTML in content itself if no separate html param
+  const sourceHtml = html || (/<[a-z][\s\S]*>/i.test(content) ? content : null);
+
   const [claims, eeat] = await Promise.all([
     extractClaims(content),
     Promise.resolve(scoreEEAT(content)),
   ]);
 
-  // Wiki verify high-risk verifiable claims (max 4 to keep fast)
+  // Wiki verify high-risk verifiable claims
   const toVerify = claims.filter(c => c.verifiable && c.wiki_lookup && c.risk !== 'low').slice(0, 8);
   const wikiResults = await Promise.all(toVerify.map(c => wikiLookup(c.wiki_lookup)));
 
@@ -215,22 +345,36 @@ export async function verifyClaims(content) {
     }
   });
 
-  // Batch-check if claims contradict their wiki source → return correct_value
+  // Batch-check for contradictions against knowledge sources
   if (foundWithWiki.length > 0) {
     const corrections = await extractCorrectValues(foundWithWiki);
     foundWithWiki.forEach((c, batchIdx) => {
       const correction = corrections[batchIdx];
       if (correction && !correction.matches && correction.correct_value) {
-        // Find the original claim and attach the correction
         const original = toVerify.find(t => t.claim === c.claim);
         if (original) {
           original.status = 'contradicted';
           original.correct_value = correction.correct_value;
-          original.source = 'Naraseo verification database';
+          original.source = 'Naraseo ground-truth layer';
         }
       }
     });
   }
+
+  // OpenAlex grounding for medical/legal high-risk claims — add scholarly DOI evidence
+  const medicalLegal = /\b(medical|clinical|treatment|dosage|legal|statute|regulation|study|trial|research)\b/i;
+  const highRiskClaims = claims.filter(c => c.risk === 'high' && c.verifiable && medicalLegal.test(c.claim)).slice(0, 2);
+  const openAlexResults = await Promise.all(highRiskClaims.map(c => openAlexSearch(c.claim).catch(() => ({ found: false }))));
+  highRiskClaims.forEach((claim, i) => {
+    if (openAlexResults[i].found) {
+      claim.scholarly_evidence = openAlexResults[i];
+    }
+  });
+
+  // Schema Conflict Detection — cross-layer factual reconciliation
+  const schemaConflicts = sourceHtml
+    ? await detectSchemaConflicts(content, extractSchemaFacts(sourceHtml)).catch(() => [])
+    : [];
 
   // Mark remaining
   claims.forEach(c => {
@@ -240,13 +384,16 @@ export async function verifyClaims(content) {
   });
 
   const flagged = claims.filter(c => ['unverified', 'needs_review', 'contradicted'].includes(c.status));
-  const safe = claims.filter(c => ['verifiable', 'likely_safe', 'opinion'].includes(c.status));
+  const safe    = claims.filter(c => ['verifiable', 'likely_safe', 'opinion'].includes(c.status));
 
-  // Strip internal/implementation fields before returning
+  // Strip internal fields
   const sanitize = (c) => {
     const { wiki, wiki_summary, wiki_title, wiki_lookup, _idx, ...clean } = c;
     return clean;
   };
+
+  const driftIndex = computeDriftIndex(claims, industry);
+  const validUntil = new Date(Date.now() + driftIndex.valid_days * 86400000).toISOString().split('T')[0];
 
   return {
     summary: {
@@ -254,9 +401,16 @@ export async function verifyClaims(content) {
       flagged: flagged.length,
       safe: safe.length,
       risk_score: claims.length > 0 ? Math.round((flagged.length / claims.length) * 100) : 0,
-      verdict: flagged.length === 0 ? 'clean' : flagged.length <= 2 ? 'review_needed' : 'high_risk',
+      verdict: flagged.length === 0 && schemaConflicts.length === 0
+        ? 'clean'
+        : flagged.length <= 2 && schemaConflicts.length === 0
+          ? 'review_needed'
+          : 'high_risk',
+      schema_conflicts_found: schemaConflicts.length,
     },
     eeat,
+    drift_index: { ...driftIndex, valid_until: validUntil },
+    schema_conflicts: schemaConflicts,
     flagged_claims: flagged.map(sanitize),
     safe_claims: safe.map(sanitize),
     all_claims: claims.map(sanitize),
