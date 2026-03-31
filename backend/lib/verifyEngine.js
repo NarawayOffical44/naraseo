@@ -196,7 +196,7 @@ function scoreEEAT(content) {
 function openAlexSearch(claim) {
   return new Promise((resolve) => {
     const q = encodeURIComponent(claim.slice(0, 120));
-    const path = `/works?search=${q}&filter=open_access.is_oa:true&per_page=1&sort=cited_by_count:desc&mailto=verify@naraseoai.com`;
+    const path = `/works?search=${q}&filter=open_access.is_oa:true&per_page=1&sort=cited_by_count:desc&select=title,doi,publication_year,cited_by_count,authorships,primary_location&mailto=verify@naraseoai.com`;
     const req = https.get({
       hostname: 'api.openalex.org',
       path,
@@ -210,6 +210,12 @@ function openAlexSearch(claim) {
           const json = JSON.parse(data);
           const w = json.results?.[0];
           if (w?.title) {
+            const authors = (w.authorships || []).slice(0, 3)
+              .map(a => a.author?.display_name).filter(Boolean);
+            const authorStr = authors.length > 1 ? `${authors[0]} et al.` : (authors[0] || 'Unknown Author');
+            const year = w.publication_year || 'n.d.';
+            const doiStr = w.doi ? ` DOI: ${w.doi}` : '';
+            const citationString = `${authorStr} (${year}). ${w.title}.${doiStr}`;
             resolve({
               found: true,
               title: w.title,
@@ -217,6 +223,7 @@ function openAlexSearch(claim) {
               cited_by_count: w.cited_by_count || 0,
               publication_year: w.publication_year || null,
               url: w.primary_location?.landing_page_url || w.doi || null,
+              citation_string: citationString,
             });
           } else { resolve({ found: false }); }
         } catch { resolve({ found: false }); }
@@ -287,7 +294,9 @@ Only flag real factual contradictions — not minor wording differences.`,
     });
     const raw = msg.content[0].text.trim().replace(/^```json\n?|^```\n?|\n?```$/g, '').trim();
     const result = JSON.parse(raw);
-    return Array.isArray(result) ? result : [];
+    return Array.isArray(result)
+      ? result.map(c => ({ ...c, flag: 'CONTRADICTION_DETECTED' }))
+      : [];
   } catch { return []; }
 }
 
@@ -301,18 +310,18 @@ function computeDriftIndex(claims, industry) {
   const stableCount   = (allText.match(stableTerms)   || []).length;
 
   if (industry === 'financial' || industry === 'legal') {
-    return { stability: 'low',       valid_days: 7,   reason: `${industry} content — rates and rulings change frequently` };
+    return { stability: 'volatile',  valid_days: 7,   re_verify_recommended: true,  reason: `${industry} content — rates and rulings change frequently` };
   }
   if (industry === 'medical') {
-    return { stability: 'medium',    valid_days: 30,  reason: 'Medical guidelines update periodically' };
+    return { stability: 'moderate',  valid_days: 30,  re_verify_recommended: false, reason: 'Medical guidelines update periodically' };
   }
   if (volatileCount > stableCount + 2) {
-    return { stability: 'low',       valid_days: 7,   reason: 'Contains volatile facts (rates, laws, prices)' };
+    return { stability: 'volatile',  valid_days: 7,   re_verify_recommended: true,  reason: 'Contains volatile facts (rates, laws, prices)' };
   }
   if (stableCount > volatileCount * 2) {
-    return { stability: 'permanent', valid_days: 180, reason: 'Based on stable historical or scientific facts' };
+    return { stability: 'permanent', valid_days: 365, re_verify_recommended: false, reason: 'Based on stable historical or scientific facts' };
   }
-  return   { stability: 'medium',    valid_days: 90,  reason: 'General content with mixed temporal stability' };
+  return   { stability: 'stable',    valid_days: 90,  re_verify_recommended: false, reason: 'General content with mixed temporal stability' };
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
