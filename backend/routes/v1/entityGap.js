@@ -17,16 +17,16 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
   if (!url) return sendApiError(res, 'MISSING_URL', 'url required', 400);
   if (!keyword) return sendApiError(res, 'MISSING_KEYWORD', 'keyword required', 400);
 
-  // competitorUrls is optional — if omitted, Bing auto-discovers (requires BING_API_KEY env var)
-  const hasBing = !!process.env.BING_API_KEY;
+  // competitorUrls is optional — if omitted, auto-discovers via SERPER_API_KEY
+  const hasSerper = !!process.env.SERPER_API_KEY;
   if (!Array.isArray(competitorUrls) || competitorUrls.length === 0) {
-    if (!hasBing) {
+    if (!hasSerper) {
       return sendApiError(res, 'MISSING_COMPETITORS', 'competitorUrls required when auto-discovery is not configured', 400, {
         tip: 'Pass 1-3 competitor URLs to compare against.',
         example: { url: 'https://yoursite.com/page', keyword: 'best seo tools 2025', competitorUrls: ['https://competitor1.com'] },
       });
     }
-    // auto-discover competitors — proceed with empty array
+    // auto-discover top-ranking competitors — proceed with empty array
   }
 
   try {

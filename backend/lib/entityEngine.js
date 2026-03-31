@@ -1,11 +1,6 @@
 /**
  * Entity Gap Engine - Information Gain analysis
  * Finds what entities/topics competitor pages have that yours doesn't
- *
- * Data sources:
- *   - fetchURL from seoEngine (already in stack)
- *   - Claude Haiku — NLP entity extraction
- *   - Google Suggest — free, no auth (related searches for keyword)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -14,32 +9,21 @@ import https from 'https';
 
 const client = new Anthropic();
 
-// Bing Web Search — auto-discover competitor URLs for a keyword
-// Requires BING_API_KEY env var (Azure free tier: 3000 queries/month)
-function bingSearchCompetitors(keyword) {
-  return new Promise((resolve) => {
-    const key = process.env.BING_API_KEY;
-    if (!key) return resolve([]);
-    const q = encodeURIComponent(keyword);
-    const options = {
-      hostname: 'api.bing.microsoft.com',
-      path: `/v7.0/search?q=${q}&count=5&mkt=en-US&responseFilter=Webpages`,
-      headers: { 'Ocp-Apim-Subscription-Key': key },
-      timeout: 6000,
-    };
-    https.get(options, (res) => {
-      let raw = '';
-      res.on('data', c => { raw += c; });
-      res.on('end', () => {
-        try {
-          const data = JSON.parse(raw);
-          const urls = (data.webPages?.value || []).map(p => p.url).filter(Boolean).slice(0, 3);
-          resolve(urls);
-        } catch { resolve([]); }
-      });
-    }).on('error', () => resolve([]))
-      .on('timeout', () => resolve([]));
-  });
+// Serper.dev — auto-discover top-ranking competitor URLs for a keyword
+// Requires SERPER_API_KEY env var. Sign up free at serper.dev (2,500 free queries, no card)
+async function serperSearchCompetitors(keyword) {
+  const key = process.env.SERPER_API_KEY;
+  if (!key) return [];
+  try {
+    const res = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: keyword, num: 10, gl: 'us' }),
+      signal: AbortSignal.timeout(6000),
+    });
+    const data = await res.json();
+    return (data.organic || []).slice(0, 3).map(r => r.link).filter(Boolean);
+  } catch { return []; }
 }
 
 // Google Suggest — free, same as keywordEngine uses
@@ -97,9 +81,9 @@ export async function analyzeEntityGap(clientUrl, keyword, competitorUrls = []) 
   // Auto-discover competitors via Bing if none provided
   let resolvedCompetitors = competitorUrls.slice(0, 3);
   if (resolvedCompetitors.length === 0) {
-    resolvedCompetitors = await bingSearchCompetitors(keyword);
+    resolvedCompetitors = await serperSearchCompetitors(keyword);
     if (resolvedCompetitors.length === 0) {
-      throw new Error('No competitor URLs provided and Bing auto-discovery is not configured (set BING_API_KEY). Pass competitorUrls manually.');
+      throw new Error('No competitor URLs provided and auto-discovery is not configured (set SERPER_API_KEY). Pass competitorUrls manually.');
     }
   }
 
