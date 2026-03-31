@@ -9,21 +9,28 @@ import https from 'https';
 
 const client = new Anthropic();
 
-// Serper.dev — auto-discover top-ranking competitor URLs for a keyword
-// Requires SERPER_API_KEY env var. Sign up free at serper.dev (2,500 free queries, no card)
-async function serperSearchCompetitors(keyword) {
-  const key = process.env.SERPER_API_KEY;
-  if (!key) return [];
-  try {
-    const res = await fetch('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: keyword, num: 10, gl: 'us' }),
-      signal: AbortSignal.timeout(6000),
-    });
-    const data = await res.json();
-    return (data.organic || []).slice(0, 3).map(r => r.link).filter(Boolean);
-  } catch { return []; }
+// Google Custom Search — auto-discover top-ranking competitor URLs for a keyword
+// Reuses the same GOOGLE_CSE_API_KEY + GOOGLE_CSE_ID already configured for geo-grid
+function googleSearchCompetitors(keyword) {
+  return new Promise((resolve) => {
+    const key = process.env.GOOGLE_CSE_API_KEY || process.env.GOOGLE_SEARCH_API_KEY;
+    const cx = process.env.GOOGLE_CSE_ID;
+    if (!key || !cx) return resolve([]);
+    const q = encodeURIComponent(keyword);
+    const url = `https://www.googleapis.com/customsearch/v1?key=${key}&cx=${cx}&q=${q}&num=5&gl=us`;
+    https.get(url, { timeout: 6000 }, (res) => {
+      let raw = '';
+      res.on('data', c => { raw += c; });
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(raw);
+          const urls = (data.items || []).map(i => i.link).filter(Boolean).slice(0, 3);
+          resolve(urls);
+        } catch { resolve([]); }
+      });
+    }).on('error', () => resolve([]))
+      .on('timeout', () => resolve([]));
+  });
 }
 
 // Google Suggest — free, same as keywordEngine uses
@@ -81,9 +88,9 @@ export async function analyzeEntityGap(clientUrl, keyword, competitorUrls = []) 
   // Auto-discover competitors via Bing if none provided
   let resolvedCompetitors = competitorUrls.slice(0, 3);
   if (resolvedCompetitors.length === 0) {
-    resolvedCompetitors = await serperSearchCompetitors(keyword);
+    resolvedCompetitors = await googleSearchCompetitors(keyword);
     if (resolvedCompetitors.length === 0) {
-      throw new Error('No competitor URLs provided and auto-discovery is not configured (set SERPER_API_KEY). Pass competitorUrls manually.');
+      throw new Error('Could not auto-discover competitors. Pass competitorUrls manually or configure GOOGLE_CSE_API_KEY + GOOGLE_CSE_ID.');
     }
   }
 
