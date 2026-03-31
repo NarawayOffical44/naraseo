@@ -234,6 +234,126 @@ function openAlexSearch(claim) {
   });
 }
 
+// ── Stale Recency Verification — Pattern 2 ───────────────────────────────────
+// Primary: NewsAPI (100 req/day free — set NEWS_API_KEY env var at newsapi.org)
+// Fallback: Google News RSS (free, no key, zero config)
+const RECENCY_SIGNALS = /\b(currently|as of (today|now|\d{4})|the latest|right now|today's|at present|this year)\b/i;
+
+function fetchNewsHeadlines(query) {
+  return new Promise((resolve) => {
+    const q = encodeURIComponent(query.slice(0, 80));
+    const apiKey = process.env.NEWS_API_KEY;
+
+    if (apiKey) {
+      // NewsAPI — better relevance, requires free key from newsapi.org
+      const req = https.get({
+        hostname: 'newsapi.org',
+        path: `/v2/everything?q=${q}&sortBy=publishedAt&pageSize=3&language=en&apiKey=${apiKey}`,
+        headers: { 'User-Agent': 'NaraseoVerify/1.0 (https://naraseoai.onrender.com)' },
+        timeout: 4000,
+      }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            const articles = (json.articles || []).slice(0, 3).map(a => ({
+              headline: a.title,
+              published: a.publishedAt?.slice(0, 10),
+              url: a.url,
+            })).filter(a => a.headline);
+            resolve(articles.length > 0 ? articles : []);
+          } catch { resolve([]); }
+        });
+      });
+      req.on('error', () => resolve([]));
+      req.on('timeout', () => { req.destroy(); resolve([]); });
+    } else {
+      // Google News RSS — free fallback, no key needed
+      const req = https.get({
+        hostname: 'news.google.com',
+        path: `/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`,
+        headers: { 'User-Agent': 'NaraseoVerify/1.0 (https://naraseoai.onrender.com)' },
+        timeout: 4000,
+      }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => {
+          try {
+            const items = [...data.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+            const results = items.slice(0, 3).map(m => {
+              const title = m[1].match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.trim();
+              const pubDate = m[1].match(/<pubDate>(.*?)<\/pubDate>/)?.[1]?.trim();
+              return { headline: title, published: pubDate?.slice(0, 16) };
+            }).filter(r => r.headline);
+            resolve(results);
+          } catch { resolve([]); }
+        });
+      });
+      req.on('error', () => resolve([]));
+      req.on('timeout', () => { req.destroy(); resolve([]); });
+    }
+  });
+}
+
+// For claims with recency language, fetch live headlines and ask Claude if any contradict
+async function verifyRecencyClaims(claims) {
+  const recencyClaims = claims.filter(c =>
+    c.verifiable && RECENCY_SIGNALS.test(c.claim) && c.risk !== 'low'
+  ).slice(0, 3); // cap — keeps latency tight
+
+  if (recencyClaims.length === 0) return;
+
+  const newsResults = await Promise.all(
+    recencyClaims.map(c => fetchNewsHeadlines(c.claim).catch(() => []))
+  );
+
+  const toCheck = recencyClaims
+    .map((c, i) => ({ claim: c, headlines: newsResults[i] }))
+    .filter(x => x.headlines.length > 0);
+
+  if (toCheck.length === 0) return;
+
+  try {
+    const items = toCheck.map((x, i) =>
+      `${i}. CLAIM: "${x.claim.claim}"\nRECENT HEADLINES:\n${x.headlines.map(h => `- ${h.headline} (${h.published})`).join('\n')}`
+    ).join('\n\n');
+
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `For each CLAIM, check if any RECENT HEADLINE contradicts it or shows it is now outdated.
+Return ONLY a JSON array — no markdown:
+[{"index":0,"stale":true,"headline":"the contradicting headline","explanation":"why this makes the claim outdated"}]
+Return stale:false if no contradiction. Only flag real contradictions.
+
+${items}`,
+      }],
+    });
+
+    const raw = msg.content[0].text.trim().replace(/^```json\n?|^```\n?|\n?```$/g, '').trim();
+    const results = JSON.parse(raw);
+
+    for (const r of results) {
+      if (r.stale) {
+        const item = toCheck[r.index];
+        if (item) {
+          item.claim.status = 'contradicted';
+          item.claim.stale = true;
+          item.claim.correct_value = r.explanation;
+          item.claim.news_evidence = {
+            contradicting_headline: r.headline,
+            recent_headlines: item.headlines,
+          };
+          item.claim.source = 'Recent news verification';
+        }
+      }
+    }
+  } catch { /* additive feature — fail silently */ }
+}
+
 // ── Schema Conflict Detection ─────────────────────────────────────────────────
 // Extracts factual fields from JSON-LD blocks in HTML
 function extractSchemaFacts(html) {
@@ -379,6 +499,9 @@ export async function verifyClaims(content, { html = null, industry = null } = {
       claim.scholarly_evidence = openAlexResults[i];
     }
   });
+
+  // Stale recency check — Pattern 2: live news contradiction detection
+  await verifyRecencyClaims(claims).catch(() => {});
 
   // Schema Conflict Detection — cross-layer factual reconciliation
   const schemaConflicts = sourceHtml
