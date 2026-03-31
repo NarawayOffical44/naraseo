@@ -8,65 +8,86 @@
 
 import { verifyClaims } from './verifyEngine.js';
 
-// High-stakes patterns per industry — deterministic, no AI needed
+// Six universal LLM failure patterns — run on ALL content regardless of industry.
+// Industry context is a severity multiplier applied after detection, not a feature switch.
 const RISK_PATTERNS = {
-  medical: [
+  // 1. Fabricated Specificity — precise numbers/stats with no attributed source
+  fabricated_specificity: [
+    { pattern: /\b\d+(\.\d+)?%\s*(of\s+\w+|users?|people|patients?|cases?|respondents?)/gi, label: 'Unattributed percentage claim', severity: 'high' },
+    { pattern: /\b(studies show|research shows?|data shows?|surveys? (show|found|indicate))\b/gi, label: 'Phantom attribution', severity: 'high' },
+    { pattern: /\b\d[\d,]+\s*(people|users?|customers?|patients?|cases?|companies)\b/gi, label: 'Unattributed population stat', severity: 'medium' },
+  ],
+  // 2. Stale Recency — LLM training cutoff presented as current fact
+  stale_recency: [
+    { pattern: /\b(currently|as of (today|now|\d{4})|at (present|this time)|the latest|right now|today's)\b/gi, label: 'Stale recency claim', severity: 'high' },
+    { pattern: /\b(this year|in \d{4}|last (year|month|quarter))\b/gi, label: 'Time-anchored claim without source', severity: 'medium' },
+  ],
+  // 3. Confidence Overreach — absolute certainty for uncertain outcomes
+  confidence_overreach: [
+    { pattern: /\b(guaranteed|100%\s*(effective|safe|accurate|success)|will always|will never|proven to (cure|prevent|fix|eliminate))\b/gi, label: 'Absolute guarantee', severity: 'critical' },
+    { pattern: /\b(no side effects?|risk.free|completely safe|zero risk|harmless)\b/gi, label: 'Risk elimination claim', severity: 'critical' },
+    { pattern: /\b(double your|10x your)\b/gi, label: 'Outcome guarantee', severity: 'critical' },
+  ],
+  // 4. Authority Fabrication — cites non-existent or unverifiable institutions
+  authority_fabrication: [
+    { pattern: /\baccording to\s+(the\s+)?(latest|recent|new|a \d{4})?\s*(study|research|report|survey)\b/gi, label: 'Uncited authority reference', severity: 'high' },
+    { pattern: /\b(experts (say|agree|recommend|warn)|scientists (say|found|discovered)|doctors (say|recommend))\b/gi, label: 'Vague expert attribution', severity: 'medium' },
+    { pattern: /\b(FDA.approved|clinically proven|scientifically validated|peer.reviewed)\b/gi, label: 'Unverified approval claim', severity: 'critical' },
+  ],
+  // 5. High-Stakes Specificity — numeric precision that could cause direct harm
+  high_stakes_specificity: [
     { pattern: /\b\d+\s*(mg|ml|mcg|g|IU|units?)\b/gi, label: 'Numeric dosage/measurement', severity: 'critical' },
-    { pattern: /\b(treat|cure|prevent|diagnose|heals?)\s+\w+/gi, label: 'Treatment or cure claim', severity: 'critical' },
-    { pattern: /\b(safe|effective|clinically proven|FDA.approved)\b/gi, label: 'Safety or approval claim', severity: 'high' },
-    { pattern: /\b(take \d+|dosage|dose of)\b/gi, label: 'Dosage instruction', severity: 'critical' },
-    { pattern: /\b(no side effects?|risk.free|harmless)\b/gi, label: 'Safety guarantee', severity: 'critical' },
-  ],
-  legal: [
-    { pattern: /\b(guaranteed|certain(ly)?|will win|100% success)\b/gi, label: 'Guaranteed legal outcome', severity: 'critical' },
-    { pattern: /\$\d[\d,]*\s*(per hour|\/hr|flat fee|retainer)/gi, label: 'Specific fee quote', severity: 'high' },
-    { pattern: /\bin [A-Z][a-z]+ (you can|it is legal|it is illegal)\b/gi, label: 'Jurisdiction-specific legal claim', severity: 'high' },
+    { pattern: /\b(take \d+|dosage of|dose:|administer)\b/gi, label: 'Dosage instruction', severity: 'critical' },
     { pattern: /\b(not liable|no liability|waive[sd]? your rights?)\b/gi, label: 'Liability waiver claim', severity: 'critical' },
-    { pattern: /\b(file a lawsuit|sue|take to court) (immediately|now|today)\b/gi, label: 'Legal action instruction', severity: 'high' },
-  ],
-  financial: [
-    { pattern: /\b(guaranteed|promise[sd]?|certain)\s+\d+%/gi, label: 'Guaranteed return percentage', severity: 'critical' },
-    { pattern: /\b\d+%\s*(return|profit|gain|yield|APR|APY)\b/gi, label: 'Specific return claim', severity: 'high' },
-    { pattern: /\b(invest now|buy now|don.t miss|limited time)\b/gi, label: 'Urgency investment call', severity: 'high' },
     { pattern: /\b(avoid tax|eliminate tax|tax.free income)\b/gi, label: 'Tax avoidance claim', severity: 'critical' },
-    { pattern: /\b(double your money|10x|risk.free investment)\b/gi, label: 'Unrealistic return claim', severity: 'critical' },
   ],
-  general: [
-    { pattern: /\b(proven|scientifically proven|studies show)\b/gi, label: 'Unlinked study claim', severity: 'medium' },
-    { pattern: /\b\d{4}\s*(study|research|survey|report)\b/gi, label: 'Unlinked dated study', severity: 'low' },
+  // 6. Urgency Manipulation — pressure tactics that override rational decision-making
+  urgency_manipulation: [
+    { pattern: /\b(act now|limited time|don.t miss|last chance|only \d+ left)\b/gi, label: 'Artificial urgency', severity: 'medium' },
+    { pattern: /\b(invest (now|today|immediately)|buy (now|today))\b/gi, label: 'High-pressure CTA', severity: 'high' },
   ],
 };
 
-// Auto-detect industry from content if not specified
+// Detect high-stakes domain context — used as severity multiplier, not feature switch
+// Any content still gets all 6 pattern checks; this only upgrades severity for known high-risk domains
+const HIGH_STAKES_DOMAINS = {
+  medical:   ['patient', 'symptom', 'treatment', 'medication', 'doctor', 'diagnosis', 'dosage', 'clinical', 'prescription', 'therapy'],
+  legal:     ['attorney', 'lawyer', 'lawsuit', 'legal', 'court', 'jurisdiction', 'statute', 'liable', 'contract', 'regulation'],
+  financial: ['investment', 'portfolio', 'return', 'profit', 'revenue', 'financial', 'stock', 'crypto', 'interest rate', 'yield'],
+};
+
 function detectIndustry(content) {
   const lower = content.toLowerCase();
-  const medicalWords = ['patient', 'symptom', 'treatment', 'medication', 'doctor', 'diagnosis', 'dosage', 'clinical'];
-  const legalWords = ['attorney', 'lawyer', 'lawsuit', 'legal', 'court', 'jurisdiction', 'statute', 'liable'];
-  const financialWords = ['investment', 'portfolio', 'return', 'profit', 'revenue', 'financial', 'stock', 'crypto'];
-
-  const scores = {
-    medical: medicalWords.filter(w => lower.includes(w)).length,
-    legal: legalWords.filter(w => lower.includes(w)).length,
-    financial: financialWords.filter(w => lower.includes(w)).length,
-  };
-
+  const scores = Object.fromEntries(
+    Object.entries(HIGH_STAKES_DOMAINS).map(([domain, words]) => [
+      domain, words.filter(w => lower.includes(w)).length,
+    ])
+  );
   const max = Math.max(...Object.values(scores));
-  if (max === 0) return 'general';
-  return Object.keys(scores).find(k => scores[k] === max);
+  return max === 0 ? 'general' : Object.keys(scores).find(k => scores[k] === max);
 }
 
-// Scan content for high-stakes patterns
+// Severity upgrade table: in high-stakes domains, medium → high, high → critical
+const SEVERITY_UPGRADE = {
+  medical:   { medium: 'high', high: 'critical' },
+  legal:     { medium: 'high', high: 'critical' },
+  financial: { medium: 'high', high: 'critical' },
+};
+
+// Scan ALL content against all 6 universal patterns.
+// Industry context upgrades severity — it does not gate which patterns run.
 function scanHighRiskSignals(content, industry) {
-  const patterns = [...(RISK_PATTERNS[industry] || []), ...RISK_PATTERNS.general];
+  const upgrade = SEVERITY_UPGRADE[industry] || {};
+  const allPatterns = Object.values(RISK_PATTERNS).flat();
   const signals = [];
 
-  for (const { pattern, label, severity } of patterns) {
+  for (const { pattern, label, severity } of allPatterns) {
     const matches = [...content.matchAll(pattern)];
     for (const match of matches.slice(0, 2)) { // cap at 2 matches per pattern
       signals.push({
         type: label,
         text: match[0],
-        severity,
+        severity: upgrade[severity] || severity,
         context: content.slice(Math.max(0, match.index - 40), match.index + match[0].length + 40).trim(),
       });
     }
