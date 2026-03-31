@@ -1167,20 +1167,20 @@ const certRes = await fetch(`https://naraseoai.onrender.com/api/v1/proof/${data.
     <!-- RISK AUDIT -->
     <section id="risk" class="doc-section">
       <h1>Risk Audit</h1>
-      <p>Industry-aware hallucination risk audit. Detects medical dosages, financial return guarantees, and legal liability claims — the things that get agencies sued. Returns a <code>publishable</code> boolean your pipeline can act on immediately.</p>
+      <p>Detects the six universal LLM failure patterns across any content type — product pages, service copy, blog posts, legal briefs, medical guides. No industry configuration needed. Returns a <code>publishable</code> boolean your pipeline can gate on immediately.</p>
 
       <div class="endpoint">
         <div style="margin-bottom:12px">
           <span class="method-badge method-post">POST</span>
           <code>/api/v1/audit/risk</code>
         </div>
-        <p>Scan content for legal risk signals before publishing. Auto-detects industry if not specified.</p>
+        <p>Scan any AI-generated content for publish risk. Context is auto-detected and used to adjust signal severity.</p>
       </div>
 
       <h2>Request</h2>
       <div class="code-block">{
-  "content": "The current interest rate is 4%. This treatment cures diabetes in 30 days.",
-  "industry": "medical"   // optional: medical | legal | financial | general (auto-detected if omitted)
+  "content": "Studies show 97% of users prefer our product. Currently the best solution. Guaranteed 100% effective.",
+  "industry": "medical"   // optional — auto-detected if omitted. Upgrades severity for high-stakes domains.
 }</div>
 
       <h2>Response</h2>
@@ -1189,19 +1189,26 @@ const certRes = await fetch(`https://naraseoai.onrender.com/api/v1/proof/${data.
   "data": {
     "publishable": false,
     "risk_level": "do_not_publish",   // safe | review_required | do_not_publish
-    "risk_score": 75,
-    "industry_detected": "medical",
-    "verdict_text": "1 critical risk signal detected (medical domain). Do not publish without compliance review.",
+    "risk_score": 80,
+    "industry_detected": "general",
+    "verdict_text": "3 critical risk signals detected. Do not publish without review.",
     "legal_risk_signals": [
       {
-        "type": "Treatment or cure claim",
-        "text": "cures diabetes in 30 days",
+        "type": "Phantom attribution",
+        "text": "Studies show",
+        "severity": "high",
+        "context": "...Studies show 97% of users prefer..."
+      },
+      {
+        "type": "Absolute guarantee",
+        "text": "Guaranteed 100% effective",
         "severity": "critical",
-        "context": "...This treatment cures diabetes in 30 days without..."
+        "context": "...Currently the best solution. Guaranteed 100% effective..."
       }
     ],
     "fix_before_publishing": [
-      "REMOVE or get legal sign-off: 'cures diabetes in 30 days' — Treatment or cure claim"
+      "REMOVE or attribute: 'Studies show' — Phantom attribution",
+      "REMOVE: 'Guaranteed 100% effective' — Absolute guarantee"
     ]
   }
 }</div>
@@ -1337,7 +1344,7 @@ console.log('Missing entities:', data.entity_gaps.filter(e => e.priority === 'cr
         <li><strong>seo_chat</strong> — Conversational SEO assistant with page context</li>
         <li><strong>verify_content</strong> — Hallucination detection with ground-truth verification; returns Certificate of Accuracy</li>
         <li><strong>entity_gap</strong> — Information gain analysis — missing knowledge-graph entities vs competitors, with canonical entity IDs</li>
-        <li><strong>risk_audit</strong> — Industry-aware risk scan (medical / legal / financial); returns <code>publishable</code> boolean</li>
+        <li><strong>risk_audit</strong> — Detects 6 universal LLM risk patterns across any content type; returns <code>publishable</code> boolean</li>
       </ul>
     </section>
 
