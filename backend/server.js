@@ -218,7 +218,7 @@ app.get('/mcp', (req, res) => {
     description: 'Full SEO & Geo engine. Works as MCP (Claude Desktop, Cursor, Windsurf, Cline), OpenAPI Actions (ChatGPT, Perplexity), or REST API.',
 
     tools: {
-      count: 10,
+      count: 13,
       list: [
         { name: 'seo_audit',           description: 'Full page audit — score, grade, all issues, Core Web Vitals' },
         { name: 'solve',               description: 'Autonomous fix plan — exact HTML + where to place it + how to apply' },
@@ -230,6 +230,9 @@ app.get('/mcp', (req, res) => {
         { name: 'local_seo_audit',     description: 'Local business SEO — NAP consistency, GMB, local schema' },
         { name: 'competitor_analysis', description: 'Competitor gap analysis with real domain authority (OpenPageRank)' },
         { name: 'seo_chat',            description: 'Conversational SEO assistant with full page context' },
+        { name: 'verify_content',      description: 'Hallucination detection — verifies claims, scores E-E-A-T, issues Certificate of Accuracy' },
+        { name: 'entity_gap',          description: 'Entity gap analysis — finds what competitors cover that your content misses' },
+        { name: 'risk_audit',          description: 'Risk scan — detects 6 universal LLM failure patterns, returns publishable verdict' },
       ],
     },
 
