@@ -10,6 +10,7 @@ import { validatePageSchemas } from '../../lib/schemaValidator.js';
 import { featureAccess, creditCheck, sendApiResponse, sendApiError } from '../../middleware/apiKey.js';
 import { getPageSpeedInsights, cwvToScore } from '../../lib/pageSpeed.js';
 import { saveAudit, getAudit, getAuditHistory } from '../../lib/history.js';
+import { getSerpFeatures } from '../../lib/serpFeatures.js';
 import supabase from '../../supabase.js';
 import crypto from 'crypto';
 
@@ -18,7 +19,7 @@ const router = express.Router();
 // POST /api/v1/audit - Full page audit
 // Accepts: { url } OR { url, html } (html bypasses fetch — for local/pre-deploy testing)
 router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (req, res) => {
-  const { url, html: rawHtml } = req.body;
+  const { url, html: rawHtml, keyword } = req.body;
   const requestId = `req_${crypto.randomBytes(6).toString('hex')}`;
 
   if (!url) {
@@ -38,7 +39,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
   try {
     const startTime = Date.now();
 
-    let auditResult, ps;
+    let auditResult, ps, serpData = null;
 
     if (rawHtml) {
       // Enforce size limit (5MB max) to prevent abuse
@@ -61,10 +62,12 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       };
       ps = null; // PageSpeed requires a public HTTPS URL — skip in HTML mode
     } else {
-      // URL fetch mode — normal flow
-      [auditResult, ps] = await Promise.all([
+      // URL fetch mode — normal flow. SERP features only when keyword provided (costs $0.0006/call)
+      const domain = new URL(url).hostname.replace(/^www\./, '');
+      [auditResult, ps, serpData] = await Promise.all([
         auditPage(url),
         getPageSpeedInsights(url),
+        keyword ? getSerpFeatures(keyword, domain).catch(() => null) : Promise.resolve(null),
       ]);
     }
 
@@ -219,6 +222,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
         followable: !pageData.robots || !pageData.robots.includes('nofollow'),
       },
       fixes: fixes || [],
+      serp_features: serpData,   // null unless keyword passed in request — costs $0.0006/call
       geo: {
         score: geo_score ?? null,
         grade: geo_grade ?? null,

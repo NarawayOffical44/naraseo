@@ -1,10 +1,13 @@
 /**
- * Keyword Engine - Real keyword research
+ * Keyword Engine — Trending keyword suggestions grounded in page/content topic.
  *
- * Data sources (all free, no API keys):
- *   1. Google Suggest API  — real autocomplete = actual searches people do
- *   2. Word frequency extraction from page content
- *   3. Claude AI synthesis — intent, gaps, prioritised quick wins
+ * Flow:
+ *   1. Extract seed topic from title/H1/content
+ *   2. DataForSEO keyword_suggestions → real volume + trend data (primary)
+ *   3. Google Suggest → free fallback if DataForSEO unavailable
+ *   4. Claude Haiku → synthesise 8-10 ranked suggestions with type + where_to_use
+ *
+ * Supports: { url } OR { content } — page crawl or raw AI-generated text
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -21,213 +24,216 @@ const STOP_WORDS = new Set([
   'all','each','every','both','few','more','most','other','some','such',
 ]);
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ─── Seed extraction ─────────────────────────────────────────────────────────
 
-function extractKeywords(text, minLength = 2) {
-  const cleaned = text
+function extractSeed(title, content) {
+  // Prefer title — it's the page's stated topic
+  if (title && title.length > 3) {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .split(/\s+/)
+      .filter(w => !STOP_WORDS.has(w))
+      .slice(0, 4)
+      .join(' ');
+  }
+  // Fall back to top phrase from content
+  const words = (content || '')
     .toLowerCase()
     .replace(/<[^>]+>/g, ' ')
-    .replace(/[^\w\s'-]/g, ' ')
+    .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length >= minLength && !STOP_WORDS.has(w));
-
+    .filter(w => w.length > 3 && !STOP_WORDS.has(w));
   const freq = {};
-  cleaned.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]).join(' ');
+}
 
-  return Object.entries(freq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 30)
-    .map(([keyword, count]) => ({
-      keyword,
-      count,
-      density: (count / cleaned.length * 100).toFixed(2) + '%',
+// ─── DataForSEO keyword suggestions ──────────────────────────────────────────
+
+function getDfsAuth() {
+  const login = process.env.DATAFORSEO_LOGIN;
+  const pass  = process.env.DATAFORSEO_PASSWORD;
+  if (!login || !pass) return null;
+  return 'Basic ' + Buffer.from(`${login}:${pass}`).toString('base64');
+}
+
+async function fetchDfsKeywords(seed) {
+  const auth = getDfsAuth();
+  if (!auth) return null;
+
+  try {
+    const resp = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live', {
+      method: 'POST',
+      headers: { 'Authorization': auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify([{
+        keyword: seed,
+        location_code: 2840,  // US — most comprehensive volume data
+        language_code: 'en',
+        limit: 30,
+        filters: ['search_volume', '>', 100],  // skip zero-volume keywords
+        order_by: ['search_volume,desc'],
+      }]),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    const items = json?.tasks?.[0]?.result?.[0]?.items || [];
+    return items.map(i => ({
+      keyword: i.keyword,
+      volume: i.keyword_info?.search_volume ?? 0,
+      competition: i.keyword_info?.competition_level ?? 'unknown',  // LOW/MEDIUM/HIGH
+      cpc: i.keyword_info?.cpc ?? null,
+      trend: detectTrend(i.keyword_info?.monthly_searches),
     }));
+  } catch {
+    return null;
+  }
 }
 
-function extractPhrases(text) {
-  const words = text
-    .toLowerCase()
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/[^\w\s'-]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
-
-  const phrases = {};
-  for (let i = 0; i < words.length - 1; i++) {
-    const p2 = `${words[i]} ${words[i+1]}`;
-    phrases[p2] = (phrases[p2] || 0) + 1;
-  }
-  for (let i = 0; i < words.length - 2; i++) {
-    const p3 = `${words[i]} ${words[i+1]} ${words[i+2]}`;
-    phrases[p3] = (phrases[p3] || 0) + 1;
-  }
-
-  return Object.entries(phrases)
-    .filter(([, c]) => c >= 2)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([phrase, count]) => ({ phrase, count }));
+function detectTrend(monthlySearches) {
+  if (!monthlySearches || monthlySearches.length < 3) return 'stable';
+  const recent = monthlySearches.slice(0, 3).map(m => m.search_volume);
+  const older  = monthlySearches.slice(3, 6).map(m => m.search_volume);
+  const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+  const olderAvg  = older.reduce((a, b) => a + b, 0) / older.length;
+  if (olderAvg === 0) return 'stable';
+  const change = (recentAvg - olderAvg) / olderAvg;
+  if (change > 0.15) return 'rising';
+  if (change < -0.15) return 'declining';
+  return 'stable';
 }
 
-/**
- * Google Suggest API — completely free, no auth, no API key.
- * Returns the same autocomplete suggestions Google shows users.
- * Position in the list = rough popularity signal (first = most searched).
- */
+// ─── Google Suggest fallback (free, no key) ───────────────────────────────────
+
 function getGoogleSuggestions(keyword) {
   return new Promise((resolve) => {
     const q = encodeURIComponent(keyword);
-    // gl=us forces US results, hl=en forces English — avoids locale-skewed suggestions
     const url = `https://suggestqueries.google.com/complete/search?client=firefox&hl=en&gl=us&q=${q}`;
-
     https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
       let raw = '';
       res.on('data', chunk => { raw += chunk; });
       res.on('end', () => {
         try {
           const parsed = JSON.parse(raw);
-          // Format: ["query", ["suggestion1", "suggestion2", ...], ...]
-          const suggestions = (parsed[1] || []).slice(0, 8);
-          resolve({ keyword, suggestions });
-        } catch {
-          resolve({ keyword, suggestions: [] });
-        }
+          resolve((parsed[1] || []).slice(0, 10));
+        } catch { resolve([]); }
       });
-    }).on('error', () => resolve({ keyword, suggestions: [] }));
-
-    // Timeout safety
-    setTimeout(() => resolve({ keyword, suggestions: [] }), 3000);
+    }).on('error', () => resolve([]));
+    setTimeout(() => resolve([]), 3000);
   });
 }
 
-// ─── Main export ────────────────────────────────────────────────────────────
+// ─── Main export ─────────────────────────────────────────────────────────────
 
 export async function analyzeKeywords(pageTitle, metaDescription, pageContent) {
-  try {
-    const keywords  = extractKeywords(pageContent);
-    const phrases   = extractPhrases(pageContent);
-    const topKws    = keywords.slice(0, 8).map(k => k.keyword);
+  const seed = extractSeed(pageTitle, pageContent);
 
-    // ── Real data: Google Suggest ─────────────────────────────────────────
-    // Use 2-word phrases for relevance — single words get generic suggestions.
-    // Build query seeds: top phrases from page + title-derived phrases.
-    const phraseSeeds = phrases.slice(0, 3).map(p => p.phrase);
+  // Run DataForSEO + Google Suggest in parallel
+  const [dfsKeywords, googleSuggestions] = await Promise.all([
+    fetchDfsKeywords(seed),
+    getGoogleSuggestions(seed),
+  ]);
 
-    const titleClean = (pageTitle || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .trim();
+  const hasDfs = dfsKeywords && dfsKeywords.length > 0;
 
-    // Also query: "TITLE + " to get what people search after the main topic
-    const titleSeeds = titleClean.length > 3
-      ? [titleClean.split(' ').slice(0, 3).join(' ')]
-      : [];
+  // Build context for Claude
+  const dfsContext = hasDfs
+    ? dfsKeywords.slice(0, 20).map(k =>
+        `"${k.keyword}" — vol: ${k.volume}, competition: ${k.competition}, trend: ${k.trend}`
+      ).join('\n')
+    : 'Not available';
 
-    // Fallback: top single keywords if no phrases found
-    const fallbackSeeds = topKws.slice(0, 2);
+  const suggestContext = googleSuggestions.length > 0
+    ? googleSuggestions.join(', ')
+    : 'Not available';
 
-    const allSeeds = [...new Set([...phraseSeeds, ...titleSeeds, ...fallbackSeeds])].slice(0, 5);
+  const prompt = `You are an expert SEO keyword strategist. Your job is to pick the BEST 8-10 keywords for this content to target RIGHT NOW based on real search data.
 
-    const suggestResults = await Promise.all(
-      allSeeds.map(kw => getGoogleSuggestions(kw))
-    );
+Content Topic: ${pageTitle || 'Unknown'}
+Meta Description: ${metaDescription || 'None'}
+Content Preview: ${(pageContent || '').substring(0, 800)}
 
-    const titleSuggestResults = []; // merged into suggestResults above
+REAL SEARCH DATA (DataForSEO — actual search volumes):
+${dfsContext}
 
-    // Build real suggestions map: keyword → suggestions[]
-    const realSuggestions = {};
-    [...suggestResults, ...titleSuggestResults].forEach(({ keyword, suggestions }) => {
-      if (suggestions.length > 0) realSuggestions[keyword] = suggestions;
-    });
+Google Autocomplete Suggestions (what people type right now):
+${suggestContext}
 
-    // Flat list of all real suggestions (de-duped) for Claude context
-    const allRealSuggestions = [...new Set(
-      Object.values(realSuggestions).flat()
-    )].slice(0, 40);
-
-    // ── Claude synthesis ──────────────────────────────────────────────────
-    const prompt = `You are an expert SEO keyword researcher. Analyze this page using real Google search data.
-
-Page Title: ${pageTitle || 'MISSING'}
-Meta Description: ${metaDescription || 'MISSING'}
-Top Page Keywords: ${topKws.join(', ')}
-Top Page Phrases: ${phrases.slice(0,8).map(p=>p.phrase).join(', ')}
-
-REAL GOOGLE SUGGESTIONS (actual searches people do — this is ground truth):
-${JSON.stringify(realSuggestions, null, 2)}
-
-All real suggestion terms: ${allRealSuggestions.join(', ')}
-
-Page Content (first 1500 chars): ${(pageContent || '').substring(0, 1500)}
-
-Based on the REAL Google suggestions (not guesses — these are actual searches), provide a JSON response ONLY (no markdown):
+Return ONLY valid JSON — no markdown, no explanation:
 {
-  "primaryKeyword": "the main keyword this page targets",
-  "primaryKeywordConfidence": 0.95,
-  "searchIntent": "informational|navigational|transactional|commercial",
-  "semanticCluster": ["related keyword variations from the real suggestions above"],
-  "contentGaps": ["topics in the real suggestions that this page does NOT cover"],
-  "quickWins": [
+  "seed_keyword": "the core topic of this content",
+  "keyword_suggestions": [
     {
-      "keyword": "exact term from real Google suggestions",
-      "source": "google_suggest",
-      "reason": "why this is a quick win",
-      "difficulty": "low|medium|high",
-      "action": "exact change to make: e.g. add to H2, add to meta description"
+      "keyword": "exact keyword to target",
+      "volume": 8100,
+      "competition": "low|medium|high",
+      "trend": "rising|stable|declining",
+      "type": "primary|secondary|question",
+      "where_to_use": "title and H1|H2 subheading|body paragraph|FAQ section|meta description",
+      "why": "one line reason why this keyword helps rank"
     }
   ],
-  "missingKeywords": ["real suggestion terms not present anywhere on the page"],
-  "contentRecommendations": [
-    "Specific recommendation backed by real search data"
-  ],
-  "titleSuggestion": "improved title tag using real high-demand terms",
-  "metaSuggestion": "improved meta description using real search terms"
-}`;
+  "content_gaps": ["topic this content is missing that searchers want"],
+  "title_suggestion": "improved title using the top primary keyword",
+  "meta_suggestion": "improved meta description under 155 chars"
+}
 
+Rules:
+- Return exactly 8-10 keyword_suggestions
+- 3-4 must be type "primary" (high volume, directly on-topic)
+- 3-4 must be type "secondary" (related, medium volume, good for subheadings)
+- 2-3 must be type "question" (PAA-style questions, perfect for FAQ)
+- Prioritise "rising" trend keywords over "stable" when volume is similar
+- Only include keywords from the real data above — no guesses`;
+
+  try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
+      max_tokens: 1200,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    let aiAnalysis;
-    try {
-      const text = response.content[0]?.text || '{}';
-      // Strip markdown code fences if present
-      const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-      aiAnalysis = JSON.parse(clean);
-    } catch {
-      aiAnalysis = {
-        primaryKeyword: topKws[0] || 'unknown',
-        primaryKeywordConfidence: 0.7,
-        searchIntent: 'informational',
-        semanticCluster: topKws.slice(1, 6),
-        contentGaps: [],
-        quickWins: allRealSuggestions.slice(0, 5).map(kw => ({
-          keyword: kw, source: 'google_suggest', difficulty: 'medium', action: 'Add to page content',
-        })),
-        missingKeywords: allRealSuggestions.filter(s => !pageContent.toLowerCase().includes(s)),
-        contentRecommendations: [],
-        titleSuggestion: pageTitle,
-        metaSuggestion: metaDescription,
-      };
-    }
+    const text = response.content[0]?.text || '{}';
+    const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    const aiAnalysis = JSON.parse(clean);
 
     return {
       success: true,
       data: {
-        extractedKeywords: keywords,
-        extractedPhrases: phrases,
-        suggestions: realSuggestions,
-        allSuggestions: allRealSuggestions,
-        analysis: aiAnalysis,
-        wordCount: pageContent.split(/\s+/).length,
+        seed_keyword: aiAnalysis.seed_keyword || seed,
+        keyword_suggestions: (aiAnalysis.keyword_suggestions || []).slice(0, 10),
+        content_gaps: aiAnalysis.content_gaps || [],
+        title_suggestion: aiAnalysis.title_suggestion || pageTitle,
+        meta_suggestion: aiAnalysis.meta_suggestion || metaDescription,
+        data_source: hasDfs ? 'DataForSEO + Google Suggest' : 'Google Suggest',
         analysisTime: new Date().toISOString(),
       },
     };
-  } catch (error) {
-    return { success: false, error: error.message };
+  } catch {
+    // Graceful fallback if Claude parse fails — return raw DataForSEO data
+    return {
+      success: true,
+      data: {
+        seed_keyword: seed,
+        keyword_suggestions: (dfsKeywords || []).slice(0, 10).map((k, i) => ({
+          keyword: k.keyword,
+          volume: k.volume,
+          competition: k.competition.toLowerCase(),
+          trend: k.trend,
+          type: i < 4 ? 'primary' : i < 7 ? 'secondary' : 'question',
+          where_to_use: i < 4 ? 'title and H1' : i < 7 ? 'H2 subheading' : 'FAQ section',
+          why: `Search volume: ${k.volume}, trend: ${k.trend}`,
+        })),
+        content_gaps: [],
+        title_suggestion: pageTitle,
+        meta_suggestion: metaDescription,
+        data_source: hasDfs ? 'DataForSEO' : 'Google Suggest',
+        analysisTime: new Date().toISOString(),
+      },
+    };
   }
 }
 
-export default { analyzeKeywords, extractKeywords, extractPhrases };
+export default { analyzeKeywords };

@@ -1,6 +1,10 @@
 /**
  * Keywords Route - POST /api/v1/keywords
- * AI-powered keyword research from page content
+ * Trending keyword suggestions grounded in page content or AI-generated text.
+ *
+ * Accepts:
+ *   { url }      — crawls the page, extracts topic, finds trending keywords
+ *   { content }  — analyzes raw text directly (AI-generated drafts, product copy, etc.)
  */
 
 import express from 'express';
@@ -8,70 +12,57 @@ import { analyzeKeywords } from '../../lib/keywordEngine.js';
 import { auditPage } from '../../lib/seoEngine.js';
 import { featureAccess, sendApiError } from '../../middleware/apiKey.js';
 import crypto from 'crypto';
-import https from 'https';
 
 const router = express.Router();
 
-async function fetchPageContent(url) {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          resolve(data);
-        });
-      })
-      .on('error', reject);
-  });
-}
-
 router.post('/', featureAccess('keywords'), async (req, res) => {
-  const { url } = req.body;
+  const { url, content } = req.body;
   const requestId = `req_${crypto.randomBytes(6).toString('hex')}`;
 
-  if (!url) {
-    return sendApiError(res, 'MISSING_URL', 'URL parameter required', 400);
-  }
-
-  try {
-    new URL(url);
-  } catch (e) {
-    return sendApiError(res, 'INVALID_URL', 'Invalid URL format', 400);
+  if (!url && !content) {
+    return sendApiError(res, 'MISSING_INPUT', 'Provide either url or content', 400, {
+      examples: [
+        { url: 'https://example.com/blog/protein-powder' },
+        { content: 'Your AI-generated article text here...' },
+      ],
+    });
   }
 
   try {
     const startTime = Date.now();
+    let title = '', metaDescription = '', pageContent = '';
 
-    // Fetch page
-    const html = await fetchPageContent(url);
-    const audit = await auditPage(url);
-
-    if (!audit.success) {
-      return sendApiError(res, 'AUDIT_FAILED', 'Failed to fetch page', 500);
+    if (url) {
+      try { new URL(url); } catch {
+        return sendApiError(res, 'INVALID_URL', 'Invalid URL format', 400);
+      }
+      const audit = await auditPage(url);
+      if (!audit.success) return sendApiError(res, 'FETCH_FAILED', 'Failed to fetch page', 500);
+      title           = audit.data.pageData.title || '';
+      metaDescription = audit.data.pageData.metaDescription || '';
+      pageContent     = audit.rawHtml || content || '';
+    } else {
+      // Raw content mode — extract title from first line or H1-like opening
+      pageContent = content;
+      const firstLine = content.split('\n').find(l => l.trim().length > 0) || '';
+      title = firstLine.replace(/^#+\s*/, '').trim().slice(0, 100);
     }
 
-    const { title, metaDescription } = audit.data.pageData;
-
-    // Analyze keywords
-    const analysis = await analyzeKeywords(title, metaDescription, html);
+    const analysis = await analyzeKeywords(title, metaDescription, pageContent);
 
     if (!analysis.success) {
       return sendApiError(res, 'ANALYSIS_FAILED', analysis.error, 500);
     }
-
-    const processingMs = Date.now() - startTime;
 
     return res.status(200).json({
       success: true,
       data: analysis.data,
       meta: {
         requestId,
-        version: '1.0',
-        processingMs,
+        version: '2.0',
+        processingMs: Date.now() - startTime,
         creditsUsed: 2,
+        input_type: url ? 'url' : 'content',
       },
     });
   } catch (error) {
