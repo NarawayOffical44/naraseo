@@ -152,11 +152,11 @@
     .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
     .btn-outline:hover { background: var(--primary-dim); }
 
-    .btn-lg { padding: 13px 30px; font-size: 15px; border-radius: 10px; }
+    .btn-lg { padding: 14px 36px; font-size: 15px; border-radius: 10px; font-weight: 600; }
 
     /* ── HERO ── */
     .hero {
-      padding: 100px 32px 72px;
+      padding: 120px 32px 80px;
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -192,11 +192,11 @@
     }
 
     .hero h1 {
-      font-size: clamp(36px, 5.5vw, 64px);
-      font-weight: 800;
-      line-height: 1.08;
-      letter-spacing: -1.5px;
-      margin-bottom: 22px;
+      font-size: clamp(40px, 6.5vw, 72px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 28px;
     }
 
     .hero h1 .gradient {
@@ -209,19 +209,20 @@
     .hero-sub {
       font-size: 18px;
       color: var(--text-muted);
-      line-height: 1.7;
-      margin-bottom: 36px;
-      max-width: 560px;
+      line-height: 1.8;
+      margin-bottom: 44px;
+      max-width: 620px;
       margin-left: auto;
       margin-right: auto;
+      font-weight: 400;
     }
 
     .hero-ctas {
       display: flex;
-      gap: 12px;
+      gap: 14px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 64px;
+      margin-bottom: 72px;
     }
 
     /* ── AUDIT MOCKUP ── */
@@ -426,14 +427,14 @@
     .feature-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 30px;
-      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      border-radius: 16px;
+      padding: 40px 36px;
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
     }
     .feature-card:hover {
       border-color: var(--primary);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 40px rgba(99,102,241,0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(99,102,241,0.15);
     }
 
     .feature-icon {
@@ -447,8 +448,8 @@
       margin-bottom: 18px;
     }
 
-    .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
-    .feature-card p { color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+    .feature-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+    .feature-card p { color: var(--text-muted); font-size: 15px; line-height: 1.7; }
 
     .feature-list {
       list-style: none;
@@ -501,8 +502,8 @@
       background-clip: text;
     }
 
-    .step-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
-    .step-card p { color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+    .step-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+    .step-card p { color: var(--text-muted); font-size: 15px; line-height: 1.7; }
 
     /* ── MCP ── */
     .section-dark { background: var(--surface); }
