@@ -366,71 +366,71 @@
           <th>Agency</th>
         </tr>
         <tr>
-          <td><strong>SEO Audit</strong></td>
-          <td>Scores your page 0–100, lists issues with fixes</td>
+          <td><strong>AI Visibility Scan</strong></td>
+          <td>AI Visibility Score + ranked issues + competitive intelligence + verified fixes</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Speed Metrics</strong></td>
-          <td>Real page speed data (LCP, FCP, CLS)</td>
+          <td><strong>Performance Metrics</strong></td>
+          <td>Core Web Vitals: LCP, CLS, INP + full Lighthouse analysis</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Keyword Research</strong></td>
-          <td>Finds keywords, gaps, and quick wins for your page</td>
+          <td><strong>Keyword Intelligence</strong></td>
+          <td>Real search volume + trending keywords + placement strategy + difficulty</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
           <td><strong>Schema Validation</strong></td>
-          <td>Checks and generates structured data (rich results)</td>
+          <td>Validation + generation + Google compliance check for structured data</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Competitor Analysis</strong></td>
-          <td>Compares your site against competitors' SEO</td>
+          <td><strong>Competitive Intelligence</strong></td>
+          <td>Keyword gaps + domain authority comparison + ranking strategy analysis</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>AI Chat Assistant</strong></td>
-          <td>Ask Naraseo AI anything about your page</td>
+          <td><strong>SEO Chat</strong></td>
+          <td>AI strategist with live page context for instant guidance</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>PDF Report</strong></td>
-          <td>Professional report you can download or share</td>
+          <td><strong>Verify Content</strong></td>
+          <td>Hallucination detection + Certificate of Accuracy for client assurance</td>
           <td>✓</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Site Crawl</strong></td>
-          <td>Audits every page on your site at once</td>
+          <td><strong>Full Site Crawl</strong></td>
+          <td>Enterprise crawl: audits every page + architecture analysis</td>
           <td>—</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>Geo-Grid Ranking</strong></td>
-          <td>See where you rank locally across a map grid</td>
+          <td><strong>Local Rank Tracking</strong></td>
+          <td>Monitor keyword positions across geographic territories</td>
           <td>—</td>
           <td>✓</td>
           <td>✓</td>
         </tr>
         <tr>
-          <td><strong>White-Label</strong></td>
-          <td>Reports branded as your agency</td>
+          <td><strong>White-Label Platform</strong></td>
+          <td>Fully branded reports and dashboard for your clients</td>
           <td>—</td>
           <td>—</td>
           <td>✓</td>
@@ -604,8 +604,8 @@ console.log('Grade:', response.data.data.grade);</div>
 
     <!-- AUDIT ENDPOINT -->
     <section id="audit" class="doc-section">
-      <h1>SEO Audit</h1>
-      <p>Full on-page analysis with score, issues, and Speed Metrics</p>
+      <h1>AI Visibility Scan</h1>
+      <p>Complete on-page analysis with AI Visibility Score (0–100), ranked issues, competitive gaps, and performance metrics</p>
 
       <div class="endpoint">
         <div style="margin-bottom: 12px;">
@@ -1033,8 +1033,8 @@ downloadReport('https://example.com', 'YOUR_API_KEY');</div>
 
     <!-- VERIFY -->
     <section id="verify" class="doc-section">
-      <h1>Verify Content</h1>
-      <p>Detect hallucinations in AI-generated or human content before you publish. Returns flagged claims, a verifiable verdict, E-E-A-T scoring, and a <strong>Certificate of Accuracy</strong> you can share as proof.</p>
+      <h1>Verify Content — Hallucination Detection</h1>
+      <p>Scan every claim in AI-generated or human content against live sources. Instantly detect hallucinations, contradictions, and credibility gaps. Returns flagged claims, publishable verdict, authority signals, and <strong>Certificate of Accuracy</strong> for client assurance.</p>
 
       <div class="note" style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.25)">
         <strong>The trust mechanism:</strong> When a claim contradicts our source data, we return <code>correct_value</code> — the actual correct fact. Your user checks it and finds we were right. That's the moment they trust the product.
@@ -1166,8 +1166,8 @@ const certRes = await fetch(`https://naraseoai.onrender.com/api/v1/proof/${data.
 
     <!-- RISK AUDIT -->
     <section id="risk" class="doc-section">
-      <h1>Risk Audit</h1>
-      <p>Detects the six universal LLM failure patterns across any content type — product pages, service copy, blog posts, legal briefs, medical guides. No industry configuration needed. Returns a <code>publishable</code> boolean your pipeline can gate on immediately.</p>
+      <h1>Risk Audit — Content Safety Gate</h1>
+      <p>Detects six universal LLM failure patterns across all content types: fabricated specificity, stale recency, confidence overreach, authority fabrication, high-stakes specificity, urgency manipulation. Returns instant <code>publishable</code> verdict (true/false) your pipeline can act on. Medical, legal, and financial content gets elevated scrutiny.</p>
 
       <div class="endpoint">
         <div style="margin-bottom:12px">
