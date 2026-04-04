@@ -4,6 +4,7 @@
  */
 
 import https from 'https';
+import http from 'http';
 import { URL } from 'url';
 
 const DEFAULT_TIMEOUT = 15000;
@@ -140,66 +141,95 @@ function parseHTML(html) {
   return data;
 }
 
-// Fetch URL with proper headers and timeout
-async function fetchURL(urlString) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlString);
-    const isHttps = url.protocol === 'https:';
-    const httpModule = isHttps ? https : http;
+// Fetch URL with exponential backoff retry on timeout/network errors
+async function fetchURL(urlString, maxRetries = 3) {
+  const MAX_RETRIES = maxRetries;
+  const BASE_DELAY = 500; // ms
+  const MAX_DELAY = 4000; // ms
+  const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
-    const options = {
-      hostname: url.hostname,
-      path: url.pathname + url.search,
-      method: 'GET',
-      timeout: DEFAULT_TIMEOUT,
-      headers: {
-        'User-Agent': USER_AGENT,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'identity',
-        'DNT': '1',
-        'Connection': 'close',
-      },
-    };
+  async function attemptFetch(attempt = 0) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(urlString);
+      const isHttps = url.protocol === 'https:';
+      const httpModule = isHttps ? https : http;
 
-    const req = httpModule.request(options, (res) => {
-      let data = '';
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: 'GET',
+        timeout: DEFAULT_TIMEOUT,
+        headers: {
+          'User-Agent': USER_AGENT,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'identity',
+          'DNT': '1',
+          'Connection': 'close',
+        },
+      };
 
-      // Follow redirects
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        resolve(fetchURL(res.headers.location));
-        return;
-      }
+      const req = httpModule.request(options, (res) => {
+        let data = '';
 
-      if (res.statusCode !== 200) {
-        reject(new Error(`HTTP ${res.statusCode}`));
-        return;
-      }
+        // Follow redirects
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          resolve(fetchURL(res.headers.location, MAX_RETRIES - attempt));
+          return;
+        }
 
-      res.on('data', (chunk) => {
-        data += chunk;
-        if (data.length > 5000000) { // 5MB limit
-          req.abort();
-          reject(new Error('Response too large'));
+        // Check if status is retryable
+        if (RETRYABLE_STATUSES.has(res.statusCode) && attempt < MAX_RETRIES) {
+          // Retry on server errors
+          const delay = Math.min(BASE_DELAY * Math.pow(2, attempt) + Math.random() * 100, MAX_DELAY);
+          setTimeout(() => attemptFetch(attempt + 1).then(resolve).catch(reject), delay);
+          return;
+        }
+
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+
+        res.on('data', (chunk) => {
+          data += chunk;
+          if (data.length > 5000000) { // 5MB limit
+            req.abort();
+            reject(new Error('Response too large'));
+          }
+        });
+
+        res.on('end', () => {
+          resolve(data);
+        });
+      });
+
+      req.on('timeout', () => {
+        req.abort();
+        if (attempt < MAX_RETRIES) {
+          // Retry on timeout with exponential backoff
+          const delay = Math.min(BASE_DELAY * Math.pow(2, attempt) + Math.random() * 100, MAX_DELAY);
+          setTimeout(() => attemptFetch(attempt + 1).then(resolve).catch(reject), delay);
+        } else {
+          reject(new Error('Request timeout (max retries exceeded)'));
         }
       });
 
-      res.on('end', () => {
-        resolve(data);
+      req.on('error', (err) => {
+        if (attempt < MAX_RETRIES && (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND')) {
+          // Retry on network errors
+          const delay = Math.min(BASE_DELAY * Math.pow(2, attempt) + Math.random() * 100, MAX_DELAY);
+          setTimeout(() => attemptFetch(attempt + 1).then(resolve).catch(reject), delay);
+        } else {
+          reject(err);
+        }
       });
-    });
 
-    req.on('timeout', () => {
-      req.abort();
-      reject(new Error('Request timeout'));
+      req.end();
     });
+  }
 
-    req.on('error', (err) => {
-      reject(err);
-    });
-
-    req.end();
-  });
+  return attemptFetch();
 }
 
 // Detect if page is a Client-Side Rendered SPA (React, Vue, Angular)
