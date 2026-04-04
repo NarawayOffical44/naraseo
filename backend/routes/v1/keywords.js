@@ -11,6 +11,7 @@ import express from 'express';
 import { analyzeKeywords } from '../../lib/keywordEngine.js';
 import { auditPage } from '../../lib/seoEngine.js';
 import { featureAccess, sendApiError } from '../../middleware/apiKey.js';
+import { formatErrorResponse } from '../../middleware/errorHandler.js';
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -66,8 +67,8 @@ router.post('/', featureAccess('keywords'), async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Keywords error:', error);
-    return sendApiError(res, 'INTERNAL_ERROR', error.message, 500);
+    const errorResponse = formatErrorResponse(error, { route: 'keywords', inputType: url ? 'url' : 'content' });
+    return res.status(500).json(errorResponse);
   }
 });
 

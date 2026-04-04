@@ -12,8 +12,11 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import https from 'https';
+import { googleSuggestCache } from './cache.js';
+import { CircuitBreaker, logError } from '../middleware/errorHandler.js';
 
 const client = new Anthropic();
+const claudeCircuitBreaker = new CircuitBreaker(5, 60000); // 5 failures → 60s reset
 
 const STOP_WORDS = new Set([
   'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
@@ -107,21 +110,49 @@ function detectTrend(monthlySearches) {
 
 // ─── Google Suggest fallback (free, no key) ───────────────────────────────────
 
-function getGoogleSuggestions(keyword) {
+function getGoogleSuggestions(keyword, attempt = 0) {
   return new Promise((resolve) => {
+    // Check cache first
+    const cached = googleSuggestCache.get(keyword);
+    if (cached) return resolve(cached);
+
     const q = encodeURIComponent(keyword);
     const url = `https://suggestqueries.google.com/complete/search?client=firefox&hl=en&gl=us&q=${q}`;
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+    const timeout = setTimeout(() => {
+      req.destroy();
+      if (attempt < 2) {
+        // Retry up to 2 times on timeout
+        setTimeout(() => getGoogleSuggestions(keyword, attempt + 1).then(resolve), 500);
+      } else {
+        resolve([]);
+      }
+    }, 3000);
+
+    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3000 }, (res) => {
       let raw = '';
       res.on('data', chunk => { raw += chunk; });
       res.on('end', () => {
+        clearTimeout(timeout);
         try {
           const parsed = JSON.parse(raw);
-          resolve((parsed[1] || []).slice(0, 10));
+          const suggestions = (parsed[1] || []).slice(0, 10);
+          // Cache for 30 minutes
+          googleSuggestCache.set(keyword, suggestions, 1800000);
+          resolve(suggestions);
         } catch { resolve([]); }
       });
-    }).on('error', () => resolve([]));
-    setTimeout(() => resolve([]), 3000);
+    });
+
+    req.on('error', (err) => {
+      clearTimeout(timeout);
+      logError(err, { context: 'getGoogleSuggestions', keyword, attempt });
+      if (attempt < 2) {
+        // Retry on error
+        setTimeout(() => getGoogleSuggestions(keyword, attempt + 1).then(resolve), 500);
+      } else {
+        resolve([]);
+      }
+    });
   });
 }
 
@@ -189,15 +220,24 @@ Rules:
 - Only include keywords from the real data above — no guesses`;
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1200,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    let aiAnalysis = {};
+    try {
+      const response = await claudeCircuitBreaker.execute(() =>
+        client.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1200,
+          messages: [{ role: 'user', content: prompt }],
+        })
+      );
 
-    const text = response.content[0]?.text || '{}';
-    const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-    const aiAnalysis = JSON.parse(clean);
+      const text = response.content[0]?.text || '{}';
+      const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      aiAnalysis = JSON.parse(clean);
+    } catch (claudeError) {
+      logError(claudeError, { context: 'analyzeKeywords/claude', operation: 'synthesis' });
+      // If Claude fails, we'll use the raw data fallback below
+      aiAnalysis = {};
+    }
 
     return {
       success: true,

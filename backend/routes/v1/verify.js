@@ -9,6 +9,7 @@ import { verifyClaims } from '../../lib/verifyEngine.js';
 import { fetchURL } from '../../lib/seoEngine.js';
 import { saveVerification, getVerification } from '../../lib/history.js';
 import { featureAccess, creditCheck, sendApiError } from '../../middleware/apiKey.js';
+import { formatErrorResponse } from '../../middleware/errorHandler.js';
 import supabase from '../../supabase.js';
 import crypto from 'crypto';
 
@@ -84,8 +85,8 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       },
     });
   } catch (error) {
-    console.error('Verify error:', error);
-    return sendApiError(res, 'VERIFY_FAILED', error.message, 500);
+    const errorResponse = formatErrorResponse(error, { route: 'verify', contentLength: content?.length });
+    return res.status(500).json(errorResponse);
   }
 });
 

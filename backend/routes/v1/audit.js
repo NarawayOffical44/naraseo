@@ -11,6 +11,7 @@ import { featureAccess, creditCheck, sendApiResponse, sendApiError } from '../..
 import { getPageSpeedInsights, cwvToScore } from '../../lib/pageSpeed.js';
 import { saveAudit, getAudit, getAuditHistory } from '../../lib/history.js';
 import { getSerpFeatures } from '../../lib/serpFeatures.js';
+import { formatErrorResponse } from '../../middleware/errorHandler.js';
 import supabase from '../../supabase.js';
 import crypto from 'crypto';
 
@@ -259,8 +260,8 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       },
     });
   } catch (error) {
-    console.error('Audit error:', error);
-    return sendApiError(res, 'INTERNAL_ERROR', error.message, 500);
+    const errorResponse = formatErrorResponse(error, { route: 'audit', url, hasKeyword: !!req.body.keyword });
+    return res.status(500).json(errorResponse);
   }
 });
 
