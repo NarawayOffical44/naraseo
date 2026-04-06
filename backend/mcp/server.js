@@ -440,20 +440,22 @@ Generate a prioritised site-wide action plan as JSON: { summary, criticalSiteIss
   // ── Tool 11: verify_content ────────────────────────────────────────────────
   server.tool(
     'verify_content',
-    'Hallucination detection + E-E-A-T scoring for AI-generated or human-written content. Extracts factual claims, cross-checks each against Wikipedia, flags unverifiable statements, and scores authoritativeness signals (author bio, dates, citations, credentials). Essential before publishing AI content.',
+    'Hallucination detection + E-E-A-T scoring for AI-generated or human-written content. Extracts claims, cross-checks against Wikipedia/Wikidata/Crossref/OpenAlex, flags unverifiable statements, scores authoritativeness. Essential before publishing AI content. Works for any domain: medical, legal, finance, research, marketing.',
     {
       content: z.string().min(50).max(10000)
         .describe('The text content to verify — paste AI-generated copy, article draft, or any factual text'),
       url: z.string().url().optional()
         .describe('Optional source URL — if provided, fetches page content automatically'),
+      industry: z.enum(['general', 'medical', 'legal', 'finance', 'research']).optional()
+        .describe('Industry context (optional): general, medical, legal, finance, or research. Affects drift index timeframe.'),
     },
-    async ({ content, url }) => {
+    async ({ content, url, industry = 'general' }) => {
       let textToVerify = content;
       if (url && !content) {
         const html = await fetchURL(url).catch(() => '');
         textToVerify = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 10000);
       }
-      const result = await verifyClaims(textToVerify);
+      const result = await verifyClaims(textToVerify, { industry });
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
