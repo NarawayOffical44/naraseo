@@ -1,0 +1,111 @@
+{
+  "manifest_version": "0.2",
+  "name": "Naraseo AI",
+  "version": "1.0.0",
+  "display_name": "Naraseo AI - SEO & Verification",
+  "short_description": "Enterprise SEO audits, keyword research, and AI content verification via MCP",
+  "description": "Full-stack SEO and content intelligence platform. Audits pages, researches keywords, verifies claims, detects hallucinations, and provides schema validation. All tools are read-only and use free public data sources.",
+  "author": "Naraseo",
+  "homepage": "https://naraseo.onrender.com",
+  "repository": "https://github.com/NarawayOffical44/naraseo",
+  "license": "Proprietary",
+  "privacy_policies": [
+    {
+      "url": "https://naraseo.onrender.com/privacy.html",
+      "description": "Naraseo privacy policy"
+    },
+    {
+      "url": "https://github.com/NarawayOffical44/naraseo/blob/main/backend/mcp/README.md",
+      "description": "MCP server privacy & data handling"
+    }
+  ],
+  "tools": [
+    {
+      "name": "seo_audit",
+      "description": "Full technical SEO audit of any URL",
+      "readOnlyHint": true
+    },
+    {
+      "name": "solve",
+      "description": "Autonomous SEO problem solving with fixes",
+      "readOnlyHint": true
+    },
+    {
+      "name": "keyword_research",
+      "description": "Data-driven keyword suggestions with trends",
+      "readOnlyHint": true
+    },
+    {
+      "name": "schema_validate",
+      "description": "JSON-LD structured data validation",
+      "readOnlyHint": true
+    },
+    {
+      "name": "site_crawl",
+      "description": "Multi-page site audit and analysis",
+      "readOnlyHint": true
+    },
+    {
+      "name": "geo_grid",
+      "description": "Local search ranking heatmap",
+      "readOnlyHint": true
+    },
+    {
+      "name": "local_seo_audit",
+      "description": "Local business SEO signals audit",
+      "readOnlyHint": true
+    },
+    {
+      "name": "competitor_analysis",
+      "description": "Competitor comparison and gaps",
+      "readOnlyHint": true
+    },
+    {
+      "name": "seo_chat",
+      "description": "Expert AI SEO consultation chat",
+      "readOnlyHint": true
+    },
+    {
+      "name": "solve_site",
+      "description": "Site-wide SEO problem solving",
+      "readOnlyHint": true
+    },
+    {
+      "name": "verify_content",
+      "description": "AI hallucination detection and fact-checking",
+      "readOnlyHint": true
+    },
+    {
+      "name": "entity_gap",
+      "description": "Information gap analysis vs competitors",
+      "readOnlyHint": true
+    },
+    {
+      "name": "risk_audit",
+      "description": "LLM failure pattern detection",
+      "readOnlyHint": true
+    }
+  ],
+  "authentication": {
+    "type": "none",
+    "required": false
+  },
+  "data_handling": {
+    "personal_data": false,
+    "external_calls": [
+      "Wikipedia API",
+      "Wikidata API",
+      "OpenAlex API",
+      "Crossref API",
+      "NewsAPI (optional)",
+      "Google APIs (optional)"
+    ],
+    "data_retention": "24 hours (cache only)",
+    "third_party_sharing": "None"
+  },
+  "limits": {
+    "max_input_chars": 10000,
+    "max_result_chars": 150000,
+    "timeout_seconds": 300
+  }
+}
