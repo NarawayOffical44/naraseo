@@ -17,7 +17,7 @@ const router = express.Router();
 
 // POST /api/v1/verify
 router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (req, res) => {
-  const { content, url } = req.body;
+  const { content, url, industry = 'general' } = req.body;
 
   if (!content || typeof content !== 'string') {
     return sendApiError(res, 'MISSING_CONTENT', 'content (string) parameter required', 400, {
@@ -45,7 +45,7 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
       ]);
     }
 
-    const result = await verifyClaims(content, { html });
+    const result = await verifyClaims(content, { html, industry });
 
     const certificateId = `cert_${crypto.randomBytes(8).toString('hex')}`;
     const contentHash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);

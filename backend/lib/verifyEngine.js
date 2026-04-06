@@ -121,7 +121,7 @@ Skip: opinions, vague statements, well-known facts.
 Return ONLY valid JSON array, no markdown.
 
 Content:
-${content.slice(0, 3000)}`
+${content.slice(0, 8000)}`
     }]
   });
 
@@ -189,6 +189,56 @@ function scoreEEAT(content) {
     grade: score >= 5 ? 'strong' : score >= 3 ? 'moderate' : 'weak',
     missing: Object.entries(signals).filter(([, v]) => !v).map(([k]) => k),
   };
+}
+
+// ── Wikidata — Entity grounding (free, no key) ──────────────────────────────────
+function wikidataLookup(entity) {
+  return new Promise((resolve) => {
+    const q = encodeURIComponent(entity);
+    const req = https.get({
+      hostname: 'www.wikidata.org',
+      path: `/w/api.php?action=wbsearchentities&search=${q}&language=en&format=json&limit=1&type=item`,
+      headers: { 'User-Agent': 'NaraseoVerify/1.0' },
+      timeout: 4000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const hit = json.search?.[0];
+          resolve(hit ? { id: hit.id, label: hit.label, description: hit.description || null } : null);
+        } catch { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+// ── Crossref — Citation verification (free, no key) ───────────────────────────────
+function crossrefSearch(title) {
+  return new Promise((resolve) => {
+    const q = encodeURIComponent(title.slice(0, 100));
+    const req = https.get({
+      hostname: 'api.crossref.org',
+      path: `/works?query=${q}&rows=1&select=title,DOI,published-online`,
+      headers: { 'User-Agent': 'NaraseoVerify/1.0' },
+      timeout: 4000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const item = json.message?.items?.[0];
+          resolve(item ? { found: true, doi: item.DOI, title: item.title?.[0] || null } : { found: false });
+        } catch { resolve({ found: false }); }
+      });
+    });
+    req.on('error', () => resolve({ found: false }));
+    req.on('timeout', () => { req.destroy(); resolve({ found: false }); });
+  });
 }
 
 // ── OpenAlex — 250M+ peer-reviewed papers, free, no API key ─────────────────
@@ -299,8 +349,8 @@ function fetchNewsHeadlines(query) {
 // For claims with recency language, fetch live headlines and ask Claude if any contradict
 async function verifyRecencyClaims(claims) {
   const recencyClaims = claims.filter(c =>
-    c.verifiable && RECENCY_SIGNALS.test(c.claim) && c.risk !== 'low'
-  ).slice(0, 3); // cap — keeps latency tight
+    c.verifiable && RECENCY_SIGNALS.test(c.claim)
+  ).slice(0, 8); // increased cap for better coverage
 
   if (recencyClaims.length === 0) return;
 
@@ -456,8 +506,16 @@ export async function verifyClaims(content, { html = null, industry = null } = {
     Promise.resolve(scoreEEAT(content)),
   ]);
 
-  // Wiki verify high-risk verifiable claims
-  const toVerify = claims.filter(c => c.verifiable && c.wiki_lookup && c.risk !== 'low').slice(0, 8);
+  // Deduplicate claims by exact text
+  const seenClaims = new Set();
+  const deduped = claims.filter(c => {
+    if (seenClaims.has(c.claim)) return false;
+    seenClaims.add(c.claim);
+    return true;
+  });
+
+  // Wiki verify all verifiable claims (not just high-risk)
+  const toVerify = deduped.filter(c => c.verifiable && c.wiki_lookup).slice(0, 20);
   const wikiResults = await Promise.all(toVerify.map(c => wikiLookup(c.wiki_lookup)));
 
   // Merge wiki results
@@ -490,9 +548,28 @@ export async function verifyClaims(content, { html = null, industry = null } = {
     });
   }
 
-  // OpenAlex grounding for medical/legal high-risk claims — add scholarly DOI evidence
-  const medicalLegal = /\b(medical|clinical|treatment|dosage|legal|statute|regulation|study|trial|research)\b/i;
-  const highRiskClaims = claims.filter(c => c.risk === 'high' && c.verifiable && medicalLegal.test(c.claim)).slice(0, 2);
+  // Wikidata grounding for named entities (people, places, organizations)
+  const namedEntityClaims = deduped.filter(c => c.type === 'named_entity' && c.verifiable).slice(0, 10);
+  const wikidataResults = await Promise.all(namedEntityClaims.map(c => wikidataLookup(c.wiki_lookup || c.claim).catch(() => null)));
+  namedEntityClaims.forEach((claim, i) => {
+    if (wikidataResults[i]) {
+      claim.wikidata = wikidataResults[i];
+    }
+  });
+
+  // Crossref citation verification for claims mentioning studies/papers
+  const citationClaims = deduped.filter(c =>
+    c.verifiable && /\b(study|paper|research|article|publication)\b/i.test(c.claim)
+  ).slice(0, 5);
+  const crossrefResults = await Promise.all(citationClaims.map(c => crossrefSearch(c.claim).catch(() => ({ found: false }))));
+  citationClaims.forEach((claim, i) => {
+    if (crossrefResults[i].found) {
+      claim.crossref = crossrefResults[i];
+    }
+  });
+
+  // OpenAlex grounding for ALL high-risk verifiable claims (not gated by keywords)
+  const highRiskClaims = deduped.filter(c => c.risk === 'high' && c.verifiable).slice(0, 8);
   const openAlexResults = await Promise.all(highRiskClaims.map(c => openAlexSearch(c.claim).catch(() => ({ found: false }))));
   highRiskClaims.forEach((claim, i) => {
     if (openAlexResults[i].found) {
