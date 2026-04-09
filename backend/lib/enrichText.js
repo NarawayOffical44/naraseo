@@ -16,7 +16,14 @@ export function enrichText(originalText, verifyResult) {
     (b.claim?.length || 0) - (a.claim?.length || 0)
   );
 
-  // Step 1: Embed sources + badges for each claim
+  // Step 1: Suggestions first (before badge embedding to avoid regex conflicts)
+  corrections.forEach(correction => {
+    if (!correction.original) return;
+    const regex = new RegExp(`\\b${escapeRegex(correction.original)}\\b`, 'gi');
+    enriched = enriched.replace(regex, `${correction.original} [SUGGESTION: change to "${correction.suggestion}"]`);
+  });
+
+  // Step 2: Embed sources + badges for each claim
   allClaims.forEach(claim => {
     if (!claim.claim) return;
 
@@ -29,14 +36,6 @@ export function enrichText(originalText, verifyResult) {
     // Case-insensitive replacement (preserve original casing in text)
     const regex = new RegExp(`\\b${escapeRegex(claim.claim)}\\b`, 'gi');
     enriched = enriched.replace(regex, replacement);
-  });
-
-  // Step 2: Add suggestions as inline comments
-  corrections.forEach(correction => {
-    if (!correction.original) return;
-    const suggestion = `${correction.original} → ${correction.suggestion}`;
-    const regex = new RegExp(`\\b${escapeRegex(correction.original)}\\b`, 'gi');
-    enriched = enriched.replace(regex, `${correction.original} [SUGGESTION: change to "${correction.suggestion}"]`);
   });
 
   return enriched;
@@ -146,9 +145,9 @@ export function enrichTextMarkdown(originalText, verifyResult) {
   // Suggestions
   if (corrections.length > 0) {
     markdown += `## 💡 Suggested Corrections\n\n`;
+    markdown += `| Original | Suggestion | Confidence | Reason |\n`;
+    markdown += `|----------|------------|------------|--------|\n`;
     corrections.forEach(correction => {
-      markdown += `| Original | Suggestion | Confidence | Reason |\n`;
-      markdown += `|----------|------------|------------|--------|\n`;
       markdown += `| ${correction.original} | ${correction.suggestion} | ${correction.confidence}% | ${correction.reason} |\n`;
     });
   }

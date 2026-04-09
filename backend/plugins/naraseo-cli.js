@@ -11,7 +11,8 @@ export const naraseoSkill = {
    * Parse user command: /naraseo inline/markdown/json
    */
   async execute(args, context) {
-    const [format = 'inline', ...options] = args.split(' ');
+    const parts = (args || '').trim().split(' ').filter(Boolean);
+    const format = parts[0] || 'inline';
 
     // Get the last LLM response from context
     const lastResponse = context.lastMessage?.content || context.selectedText;
@@ -34,7 +35,7 @@ export const naraseoSkill = {
       // Call naraseo API
       const result = await verifyText(lastResponse, {
         format,
-        apiKey: process.env.NARASEO_API_KEY || process.env.ANTHROPIC_API_KEY,
+        apiKey: process.env.NARASEO_API_KEY,
       });
 
       return formatOutput(result, format);
