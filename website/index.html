@@ -222,7 +222,28 @@
       gap: 14px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 72px;
+      margin-bottom: 24px;
+    }
+
+    /* Agent chips — like 10Web's agent selector row */
+    .agent-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-muted);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s;
+      cursor: default;
+    }
+    .agent-chip:hover {
+      background: var(--primary-dim);
+      border-color: rgba(99,102,241,0.4);
+      color: #a5b4fc;
     }
 
     /* ── AUDIT MOCKUP ── */
@@ -431,50 +452,66 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 40px 36px;
+      position: relative;
+      overflow: hidden;
       transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
     }
+    /* Subtle top accent line — appears on hover */
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), #818cf8);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover::before { opacity: 1; }
     .feature-card:hover {
-      border-color: var(--primary);
+      border-color: rgba(99,102,241,0.4);
       transform: translateY(-4px);
-      box-shadow: 0 20px 60px rgba(99,102,241,0.15);
+      box-shadow: 0 24px 64px rgba(99,102,241,0.12);
     }
 
     .feature-icon {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       background: var(--primary-dim);
-      border-radius: 12px;
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
 
-    .feature-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
-    .feature-card p { color: var(--text-muted); font-size: 15px; line-height: 1.7; }
+    .feature-card h3 { font-size: 19px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .feature-card p { color: var(--text-muted); font-size: 14.5px; line-height: 1.75; }
 
     .feature-list {
       list-style: none;
-      margin-top: 20px;
+      margin-top: 22px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border);
     }
     .feature-list li {
       display: flex;
       align-items: flex-start;
       gap: 10px;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 13.5px;
       line-height: 1.6;
     }
     .feature-list li::before {
-      content: '';
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--primary);
+      content: '✓';
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 700;
       flex-shrink: 0;
+      margin-top: 1px;
     }
 
     /* ── HOW IT WORKS ── */
@@ -482,19 +519,37 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 22px;
+      position: relative;
+    }
+    /* Connector line between steps */
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 46px;
+      left: calc(16.66% + 12px);
+      right: calc(16.66% + 12px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0.4;
+      pointer-events: none;
     }
 
     .step-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 30px;
+      border-radius: 16px;
+      padding: 32px;
       position: relative;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .step-card:hover {
+      border-color: rgba(99,102,241,0.35);
+      transform: translateY(-3px);
     }
 
     .step-num {
-      font-size: 48px;
-      font-weight: 800;
+      font-size: 44px;
+      font-weight: 900;
       color: var(--primary-dim);
       line-height: 1;
       margin-bottom: 16px;
@@ -567,17 +622,19 @@
     .price-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
+      border-radius: 18px;
+      padding: 36px 32px;
       position: relative;
-      transition: transform 0.2s;
+      transition: transform 0.25s, box-shadow 0.25s;
     }
-    .price-card:hover { transform: translateY(-3px); }
+    .price-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
     .price-card.featured {
       border-color: var(--primary);
       background: linear-gradient(160deg, #1e293b 0%, #1a2340 100%);
-      box-shadow: 0 0 0 1px rgba(99,102,241,0.3), 0 20px 60px rgba(99,102,241,0.12);
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.3), 0 24px 64px rgba(99,102,241,0.15);
+      transform: scale(1.02);
     }
+    .price-card.featured:hover { transform: scale(1.02) translateY(-4px); }
 
     .popular-badge {
       position: absolute;
@@ -696,12 +753,12 @@
     }
 
     .cta-inner {
-      max-width: 600px;
+      max-width: 760px;
       margin: 0 auto;
       background: linear-gradient(160deg, var(--surface) 0%, #1a2340 100%);
-      border: 1px solid rgba(99,102,241,0.35);
-      border-radius: 20px;
-      padding: 52px 40px;
+      border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 24px;
+      padding: 64px 48px;
       position: relative;
       overflow: hidden;
     }
@@ -709,29 +766,32 @@
     .cta-inner::before {
       content: '';
       position: absolute;
-      top: -80px;
+      top: -100px;
       left: 50%;
       transform: translateX(-50%);
-      width: 400px;
-      height: 300px;
-      background: radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, transparent 70%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .cta-inner h2 {
-      font-size: 30px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 14px;
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -0.8px;
+      margin-bottom: 16px;
       position: relative;
     }
 
     .cta-inner p {
       color: var(--text-muted);
-      font-size: 16px;
-      margin-bottom: 30px;
-      line-height: 1.65;
+      font-size: 17px;
+      margin-bottom: 34px;
+      line-height: 1.7;
       position: relative;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .cta-btns {
@@ -940,7 +1000,7 @@
   <div class="hero-inner">
     <div class="hero-badge fade-up">
       <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg>
-      Live Now — AI Visibility Score · Hallucination Detection · Keyword Intelligence · MCP + API
+      Live · Trusted AI Content Layer
     </div>
 
     <h1 class="fade-up delay-1">
@@ -949,12 +1009,21 @@
     </h1>
 
     <p class="hero-sub fade-up delay-2">
-      Naraseo is the trust layer for AI content. Between your AI writer and publish button: detect hallucinations, verify claims, ensure credibility, and optimize for search — instantly. Instant audit scores. Fact verification. Keyword strategy. One API. Publish with confidence.
+      Between your LLM and your publish button — Naraseo verifies facts, detects hallucinations, flags legal risks, and optimizes for search. One API. Any LLM. Publish with confidence.
     </p>
 
     <div class="hero-ctas fade-up delay-3">
       <a href="login.html" class="btn btn-primary btn-lg">Start Free — No Card Needed</a>
       <a href="docs.html" class="btn btn-outline btn-lg">Read the Docs</a>
+    </div>
+
+    <!-- Agent chips — inspired by 10Web agent selector -->
+    <div class="hero-agents fade-up" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:48px;">
+      <span class="agent-chip">✓ SEO Audit Agent</span>
+      <span class="agent-chip">✓ Hallucination Detect</span>
+      <span class="agent-chip">✓ Keyword Research</span>
+      <span class="agent-chip">✓ Entity Gap Agent</span>
+      <span class="agent-chip">✓ Risk Audit Agent</span>
     </div>
 
     <!-- Product Mockup -->
@@ -1000,23 +1069,23 @@
 <div class="stats-bar">
   <div class="stats-inner">
     <div class="stat fade-up">
-      <span class="stat-num">SEO</span>
-      <span class="stat-label">Score + Exact Fixes</span>
+      <span class="stat-num">13</span>
+      <span class="stat-label">MCP Tools for AI Agents</span>
     </div>
     <div class="stat-div"></div>
     <div class="stat fade-up delay-1">
-      <span class="stat-num">Facts</span>
-      <span class="stat-label">Verified Before Publishing</span>
+      <span class="stat-num">6</span>
+      <span class="stat-label">Hallucination Patterns Caught</span>
     </div>
     <div class="stat-div"></div>
     <div class="stat fade-up delay-2">
-      <span class="stat-num">100%</span>
-      <span class="stat-label">Free to Start</span>
+      <span class="stat-num">4</span>
+      <span class="stat-label">Sources Cross-Verified</span>
     </div>
     <div class="stat-div"></div>
     <div class="stat fade-up delay-3">
-      <span class="stat-num">0</span>
-      <span class="stat-label">Credit Card to Start</span>
+      <span class="stat-num">Free</span>
+      <span class="stat-label">No Card to Start</span>
     </div>
   </div>
 </div>
