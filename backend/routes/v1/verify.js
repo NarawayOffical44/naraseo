@@ -6,6 +6,7 @@
 
 import express from 'express';
 import { verifyClaims } from '../../lib/verifyEngine.js';
+import { enrichTextJSON, enrichTextMarkdown, enrichText } from '../../lib/enrichText.js';
 import { fetchURL } from '../../lib/seoEngine.js';
 import { saveVerification, getVerification } from '../../lib/history.js';
 import { featureAccess, creditCheck, sendApiError } from '../../middleware/apiKey.js';
@@ -17,11 +18,11 @@ const router = express.Router();
 
 // POST /api/v1/verify
 router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (req, res) => {
-  const { content, url, industry = 'general' } = req.body;
+  const { content, url, industry = 'general', format = 'json' } = req.body;
 
   if (!content || typeof content !== 'string') {
     return sendApiError(res, 'MISSING_CONTENT', 'content (string) parameter required', 400, {
-      example: { content: 'The interest rate is 4%. Studies show 90% of users prefer mobile.', url: 'https://example.com/blog-post' }
+      example: { content: 'The interest rate is 4%. Studies show 90% of users prefer mobile.', url: 'https://example.com/blog-post', format: 'json|markdown|inline' }
     });
   }
 
@@ -67,21 +68,36 @@ router.post('/', featureAccess('audit'), creditCheck('audit', supabase), async (
     if (req.deductCredit) req.deductCredit().catch(() => {});
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    // Format response based on user choice
+    let formattedContent = content;
+    if (format === 'json') {
+      formattedContent = enrichTextJSON(content, result);
+    } else if (format === 'markdown') {
+      formattedContent = enrichTextMarkdown(content, result);
+    } else if (format === 'inline') {
+      formattedContent = enrichText(content, result);
+    }
+
     return res.status(200).json({
       success: true,
       data: {
         certificate_id: certificateId,
-        certificate_url: `${baseUrl}/api/v1/proof/${certificateId}`,   // human-readable HTML certificate
-        json_url: `${baseUrl}/api/v1/verify/${certificateId}`,          // raw JSON record
+        certificate_url: `${baseUrl}/api/v1/proof/${certificateId}`,
+        json_url: `${baseUrl}/api/v1/verify/${certificateId}`,
         content_hash: contentHash,
         url: url || null,
+        format: format,
+        verified_content: formattedContent,
+        verdict: result.summary.verdict,
+        risk_score: result.summary.risk_score,
         ...result,
         analyzedAt: new Date().toISOString(),
       },
       meta: {
         processingMs: Date.now() - startTime,
         creditsUsed: 1,
-        note: 'Share certificate_url with clients — it renders a branded Certificate of Accuracy HTML page.',
+        note: 'Use format=json|markdown|inline to transform content. Share certificate_url for shareable proof.',
       },
     });
   } catch (error) {
