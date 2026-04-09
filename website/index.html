@@ -1461,7 +1461,7 @@
     document.getElementById('demoLoadingText').textContent = 'Fetching page and running audit…';
 
     try {
-      const r = await fetch(`${API}/solve`, {
+      const r = await fetch(`${API}/demo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
