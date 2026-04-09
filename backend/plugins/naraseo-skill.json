@@ -1,0 +1,126 @@
+{
+  "name": "naraseo-trust",
+  "version": "1.0.0",
+  "description": "AI trust verification layer - transforms LLM output into verified, sourced content",
+  "author": "Naraseo AI",
+  "license": "MIT",
+  "repository": "https://github.com/NarawayOffical44/naraseo.git",
+
+  "commands": [
+    {
+      "name": "naraseo",
+      "trigger": "/naraseo",
+      "aliases": ["/verify", "/trust", "/check"],
+      "description": "Verify and enrich text with sources and fact-checks",
+      "examples": [
+        "/naraseo verify",
+        "/naraseo audit",
+        "/naraseo json"
+      ]
+    },
+    {
+      "name": "naraseo-inline",
+      "trigger": "/naraseo inline",
+      "description": "Show inline verification (badges + sources)"
+    },
+    {
+      "name": "naraseo-markdown",
+      "trigger": "/naraseo markdown",
+      "description": "Show markdown report format"
+    },
+    {
+      "name": "naraseo-json",
+      "trigger": "/naraseo json",
+      "description": "Show structured JSON verification"
+    }
+  ],
+
+  "integrations": {
+    "claude-code": {
+      "hooks": [
+        {
+          "event": "response_generated",
+          "action": "optional_verify",
+          "description": "Optionally verify Claude's response on user command"
+        },
+        {
+          "event": "conversation_context",
+          "action": "inject_trust_awareness",
+          "description": "Inject trust/verification context into prompts"
+        }
+      ],
+      "statusline": {
+        "enabled": true,
+        "display": "Shows verification status badge"
+      }
+    },
+    "cursor": {
+      "command_palette": true,
+      "sidebar_panel": true
+    },
+    "cline": {
+      "mcp_tool": "verify_content",
+      "description": "MCP tool for verification in conversations"
+    }
+  },
+
+  "api": {
+    "base_url": "https://naraseoai.onrender.com/api/v1",
+    "endpoints": {
+      "verify": "POST /verify",
+      "proof": "GET /proof/:id"
+    },
+    "auth": {
+      "type": "api_key|jwt",
+      "header": "Authorization: Bearer {token}",
+      "env_vars": ["NARASEO_API_KEY", "ANTHROPIC_API_KEY"]
+    }
+  },
+
+  "formats": {
+    "json": {
+      "description": "Structured verification data",
+      "output": "{text, verified, verdict, claims[], suggestions[], validity}"
+    },
+    "markdown": {
+      "description": "Formatted report with tables and sections",
+      "output": "Markdown with headers, claim table, suggestions"
+    },
+    "inline": {
+      "description": "Original text with badges and sources embedded",
+      "output": "text ✅ [Wikipedia: source] ⚠️ [Needs review]"
+    }
+  },
+
+  "system_prompt": {
+    "awareness": "You are aware that users can verify your output using /naraseo command to check facts against Wikipedia, Wikidata, OpenAlex, and Crossref.",
+    "guidance": "When you make factual claims, you can suggest that the user verify critical claims using /naraseo to ensure accuracy.",
+    "transparency": "You acknowledge that while you aim for accuracy, hallucinations can occur. Verification helps catch and correct these."
+  },
+
+  "installation": {
+    "npm": "npx skills add naraseo-trust",
+    "manual": "Copy naraseo-skill.json to .claude/skills/ or equivalent",
+    "requirements": ["Node.js 16+", "Internet connection for API"]
+  },
+
+  "configuration": {
+    "auto_verify": false,
+    "default_format": "inline",
+    "cache_ttl_hours": 24,
+    "show_confidence": true,
+    "show_sources": true,
+    "max_claims_per_check": 20
+  },
+
+  "credits": {
+    "free_tier": 10,
+    "pro_tier": 1000,
+    "agency_tier": "unlimited",
+    "cost_per_verify": 1
+  },
+
+  "changelog": {
+    "1.0.0": "Initial release with json|markdown|inline formats"
+  }
+}

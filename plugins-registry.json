@@ -1,0 +1,133 @@
+{
+  "plugins": [
+    {
+      "id": "naraseo-trust-layer",
+      "name": "Naraseo AI Trust Layer",
+      "description": "Transform LLM output into verified, sourced content with instant hallucination detection",
+      "version": "1.0.0",
+      "author": {
+        "name": "Naraseo AI",
+        "url": "https://naraseoai.onrender.com"
+      },
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/NarawayOffical44/naraseo.git"
+      },
+      "homepage": "https://naraseoai.onrender.com",
+      "license": "MIT",
+      "keywords": [
+        "ai-trust",
+        "hallucination-detection",
+        "fact-verification",
+        "content-audit",
+        "claude",
+        "llm-verification"
+      ],
+      "registries": [
+        {
+          "name": "claude-plugins-official",
+          "url": "https://registry.anthropic.com/plugins"
+        },
+        {
+          "name": "cursor-marketplace",
+          "url": "https://marketplace.cursor.sh"
+        },
+        {
+          "name": "npm",
+          "package": "naraseo-trust"
+        }
+      ],
+      "platforms": [
+        {
+          "name": "chrome-extension",
+          "entry": "extension/manifest.json",
+          "install": "https://chrome.google.com/webstore/detail/naraseo-ai",
+          "description": "Browser sidebar for page audits + text verification"
+        },
+        {
+          "name": "claude-code",
+          "entry": "backend/plugins/naraseo-skill.json",
+          "command": "/naraseo",
+          "install": "npx skills add naraseo-trust",
+          "description": "Verify Claude Code responses inline with /naraseo"
+        },
+        {
+          "name": "npm-package",
+          "entry": "package.json",
+          "install": "npm install naraseo-trust",
+          "description": "Import and use verification in any Node.js app"
+        },
+        {
+          "name": "mcp-tool",
+          "entry": "backend/mcp/server.js",
+          "tools": ["verify_content", "risk_audit"],
+          "description": "MCP tools for Claude Desktop, Cursor, Cline"
+        }
+      ],
+      "capabilities": {
+        "formats": ["json", "markdown", "inline"],
+        "sources": ["wikipedia", "wikidata", "openalex", "crossref", "news"],
+        "risks_detected": 6,
+        "claims_verified": "up to 20 per request",
+        "e_eat_signals": 7
+      },
+      "pricing": {
+        "free": {
+          "verifications_per_day": 100,
+          "verifications_per_month": 10
+        },
+        "pro": {
+          "price_usd": 49,
+          "verifications_per_month": 1000
+        },
+        "agency": {
+          "price_usd": 199,
+          "verifications_per_month": "unlimited"
+        }
+      },
+      "api": {
+        "base_url": "https://naraseoai.onrender.com/api/v1",
+        "endpoints": {
+          "verify": {
+            "method": "POST",
+            "path": "/verify",
+            "params": ["content", "url", "industry", "format"]
+          },
+          "proof": {
+            "method": "GET",
+            "path": "/proof/:id",
+            "description": "Get shareable certificate of verification"
+          }
+        },
+        "auth": "Bearer {token}",
+        "rate_limits": {
+          "free": "10 req/min, 100 req/day",
+          "pro": "60 req/min, 1000 req/day",
+          "agency": "200 req/min, unlimited"
+        }
+      },
+      "documentation": {
+        "guides": [
+          {
+            "title": "Getting Started",
+            "url": "https://naraseoai.onrender.com/docs"
+          },
+          {
+            "title": "API Reference",
+            "url": "https://naraseoai.onrender.com/docs/api"
+          },
+          {
+            "title": "Examples",
+            "url": "https://github.com/NarawayOffical44/naraseo#examples"
+          }
+        ],
+        "support": "support@naraway.com"
+      },
+      "status": "published",
+      "published_at": "2026-04-09",
+      "last_updated": "2026-04-09"
+    }
+  ],
+  "manifest_version": "1.0",
+  "schema_version": "0.1.0"
+}
