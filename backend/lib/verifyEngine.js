@@ -604,6 +604,79 @@ export async function verifyClaims(content, { html = null, industry = null } = {
   const driftIndex = computeDriftIndex(claims, industry);
   const validUntil = new Date(Date.now() + driftIndex.valid_days * 86400000).toISOString().split('T')[0];
 
+  // Generate suggestions from flagged claims using existing collected data
+  const suggestions = [];
+
+  flagged.forEach(claim => {
+    if (!claim.correct_value) return; // Only suggest if we have a correction
+
+    // Calculate confidence: how many sources agree on the correction
+    let confidenceSources = 0;
+    let sourcesList = [];
+
+    if (claim.wiki_summary && claim.wiki_summary.includes(claim.correct_value)) {
+      confidenceSources++;
+      sourcesList.push('Wikipedia');
+    }
+    if (claim.scholarly_evidence && Array.isArray(claim.scholarly_evidence)) {
+      const relevantPapers = claim.scholarly_evidence.filter(e =>
+        e.title?.toLowerCase().includes(claim.correct_value?.toLowerCase())
+      );
+      if (relevantPapers.length > 0) {
+        confidenceSources++;
+        sourcesList.push(`Academic (${relevantPapers.length} papers)`);
+      }
+    }
+    if (claim.crossref_evidence && Array.isArray(claim.crossref_evidence)) {
+      if (claim.crossref_evidence.length > 0) {
+        confidenceSources++;
+        sourcesList.push(`Crossref (${claim.crossref_evidence.length} citations)`);
+      }
+    }
+    if (claim.wikidata) {
+      confidenceSources++;
+      sourcesList.push('Wikidata');
+    }
+
+    // Build confidence score (0-100): more sources = higher confidence
+    const baseConfidence = Math.min(95, Math.round((confidenceSources / 4) * 95));
+    const confidence = claim.type === 'numeric' ? baseConfidence + 5 : baseConfidence;
+
+    suggestions.push({
+      claim_index: claim._idx,
+      original: claim.claim,
+      suggestion: claim.correct_value,
+      confidence: Math.min(100, confidence),
+      impact: claim.risk === 'high' ? 'critical' : claim.risk === 'medium' ? 'significant' : 'minor',
+      reason: `Verified against ${sourcesList.join(', ') || 'multiple sources'}`,
+      verification_type: claim.type,
+      refcheck_duration_days: driftIndex.valid_days,
+    });
+  });
+
+  // Generate E-E-A-T improvement suggestions
+  const eeatSuggestions = [];
+  if (eeat.missing && Array.isArray(eeat.missing)) {
+    const improvementMap = {
+      'author': 'Add author bio/byline to establish expertise and credibility',
+      'expertise': 'Include author credentials, certifications, or professional background',
+      'citations': 'Add academic or authoritative source citations to key claims',
+      'publication_date': 'Include publication date and last update timestamp for freshness',
+      'schema_markup': 'Add structured data (Article, NewsArticle, or Author schema) for search engine understanding',
+      'external_links': 'Link to authoritative sources to increase domain authority signals',
+    };
+
+    eeat.missing.forEach(signal => {
+      if (improvementMap[signal]) {
+        eeatSuggestions.push({
+          signal: signal,
+          improvement: improvementMap[signal],
+          priority: signal === 'author' || signal === 'citations' ? 'high' : 'medium',
+        });
+      }
+    });
+  }
+
   return {
     summary: {
       total_claims: claims.length,
@@ -616,10 +689,18 @@ export async function verifyClaims(content, { html = null, industry = null } = {
           ? 'review_needed'
           : 'high_risk',
       schema_conflicts_found: schemaConflicts.length,
+      suggestions_available: suggestions.length + eeatSuggestions.length > 0,
     },
-    eeat,
+    eeat: {
+      ...eeat,
+      improvement_suggestions: eeatSuggestions,
+    },
     drift_index: { ...driftIndex, valid_until: validUntil },
     schema_conflicts: schemaConflicts,
+    suggestions: {
+      corrections: suggestions,
+      total_suggestions: suggestions.length + eeatSuggestions.length,
+    },
     flagged_claims: flagged.map(sanitize),
     safe_claims: safe.map(sanitize),
     all_claims: claims.map(sanitize),

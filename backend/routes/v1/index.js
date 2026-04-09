@@ -21,6 +21,7 @@ import verifyRouter from './verify.js';
 import entityGapRouter from './entityGap.js';
 import riskRouter from './risk.js';
 import proofRouter from './proof.js';
+import paymentRouter from './payment.js';
 import { openapiSpec } from './openapi.js';
 
 const router = express.Router();
@@ -44,6 +45,7 @@ router.use('/schema', schemaRouter);
 router.use('/competitors', competitorsRouter);
 router.use('/chat', chatRouter);
 router.use('/fixes', fixesRouter);
+router.use('/payment', paymentRouter);
 
 // OpenAPI spec — for ChatGPT Actions, Perplexity, any OpenAPI tool
 router.get('/openapi.json', (req, res) => {
