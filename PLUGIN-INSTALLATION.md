@@ -6,30 +6,7 @@ Verify LLM output across Claude Code, Chrome, and any Node.js app with instant h
 
 ## 🔧 Installation Methods
 
-### Option 1: Chrome Extension (Browser Sidebar)
-Verify any text on any webpage with one click.
-
-```bash
-# Install from Chrome Web Store (when published)
-# https://chrome.google.com/webstore/detail/naraseo-ai
-
-# OR install from repo (development)
-1. Clone: git clone https://github.com/NarawayOffical44/naraseo.git
-2. Open: chrome://extensions/
-3. Toggle "Developer mode" (top right)
-4. Click "Load unpacked"
-5. Select: naraseo/extension/
-6. Done! ✅
-```
-
-**Usage:**
-- Click Naraseo icon → sidebar opens
-- Highlight text on page → "Verify" button appears
-- See inline verification with sources + badges
-
----
-
-### Option 2: Claude Code Skill (`/naraseo` command)
+### Option 1: Claude Code Skill (`/naraseo` command)
 Verify Claude responses directly in Claude Code editor.
 
 ```bash
@@ -59,7 +36,7 @@ Result: ✅ Verified | ⚠️ Needs Review | 🔴 Hallucination
 
 ---
 
-### Option 3: npm Package (Developers)
+### Option 2: npm Package (Developers)
 Use Naraseo in your own Node.js applications.
 
 ```bash
@@ -145,15 +122,7 @@ Type: /naraseo inline
 Result: See response with verification badges + Wikipedia sources
 ```
 
-### Example 2: Browser Extension
-```
-1. Go to any website
-2. Highlight a product claim
-3. Click "Verify with Naraseo"
-4. See if claim matches Wikipedia/Wikidata sources
-```
-
-### Example 3: In Your App
+### Example 2: In Your App
 ```javascript
 import { verify } from 'naraseo-trust';
 
@@ -173,11 +142,6 @@ const { verified_content } = await verify(llmOutput, {
 
 ## 🛠️ Uninstall
 
-### Chrome Extension:
-```
-chrome://extensions/ → Find "Naraseo AI" → Click trash icon
-```
-
 ### Claude Code Skill:
 ```bash
 npx skills remove naraseo-trust
@@ -187,6 +151,8 @@ npx skills remove naraseo-trust
 ```bash
 npm uninstall naraseo-trust
 ```
+
+**Note:** Chrome extension is SEO-only (unaffected by trust layer)
 
 ---
 

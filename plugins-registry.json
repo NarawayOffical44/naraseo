@@ -39,17 +39,11 @@
       ],
       "platforms": [
         {
-          "name": "chrome-extension",
-          "entry": "extension/manifest.json",
-          "install": "https://chrome.google.com/webstore/detail/naraseo-ai",
-          "description": "Browser sidebar for page audits + text verification"
-        },
-        {
           "name": "claude-code",
           "entry": "backend/plugins/naraseo-skill.json",
           "command": "/naraseo",
           "install": "npx skills add naraseo-trust",
-          "description": "Verify Claude Code responses inline with /naraseo"
+          "description": "Verify Claude Code responses inline with /naraseo [json|markdown|inline]"
         },
         {
           "name": "npm-package",
@@ -62,8 +56,15 @@
           "entry": "backend/mcp/server.js",
           "tools": ["verify_content", "risk_audit"],
           "description": "MCP tools for Claude Desktop, Cursor, Cline"
+        },
+        {
+          "name": "rest-api",
+          "entry": "backend/routes/v1/verify.js",
+          "endpoint": "POST /api/v1/verify",
+          "description": "REST API for programmatic verification (used by npm package + skills)"
         }
       ],
+      "_note": "Chrome extension is SEO-only (extension/). Verification is API-only via REST + skill + npm."
       "capabilities": {
         "formats": ["json", "markdown", "inline"],
         "sources": ["wikipedia", "wikidata", "openalex", "crossref", "news"],
