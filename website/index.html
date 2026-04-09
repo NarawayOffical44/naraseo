@@ -1467,7 +1467,14 @@
         body: JSON.stringify({ url }),
       });
       const json = await r.json();
-      if (!json.success) throw new Error(json.error?.message || 'Audit failed');
+      if (!json.success) {
+        // Redirect to login if demo limit hit
+        if (json.error?.code === 'DEMO_LIMIT') {
+          window.location.href = 'login.html';
+          return;
+        }
+        throw new Error(json.error?.message || 'Audit failed');
+      }
       renderDemo(json.data, url);
     } catch (e) {
       errEl.innerHTML = `<div class="demo-error">⚠ ${e.message}</div>`;
