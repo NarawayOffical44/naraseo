@@ -15,6 +15,7 @@ import https from 'https';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import v1Router from './routes/v1/index.js';
+import demoRouter from './routes/v1/demo.js';
 import { apiKeyAuth, rateLimitMiddleware, whiteLabelHeaders } from './middleware/apiKey.js';
 import { createMcpServer } from './mcp/server.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -152,6 +153,8 @@ app.use(express.json({ limit: '10mb' }));
 
 // ── Mount Public API v1 with authentication ──────────────────────────────────
 app.disable('x-powered-by');
+// Demo route must be mounted BEFORE apiKeyAuth — it is public (IP rate-limited only)
+app.use('/api/v1/demo', demoRouter);
 app.use('/api/v1', apiKeyAuth(supabase), rateLimitMiddleware, whiteLabelHeaders, v1Router);
 
 // ── MCP Server — Model Context Protocol for Claude Desktop, Cursor, Windsurf ─
